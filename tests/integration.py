@@ -142,6 +142,42 @@ onRecordDeleteExecute((e) => {
             def audit_count():
                 return sql('SELECT count(*) FROM audit_log')['rows'][0][0]
 
+            with item('opt-in traces are private and SQL disclosure requires its own header'):
+                query = 'SELECT count(id) AS total FROM deals'
+                for opt_in, capture_sql in ((False, False), (True, False), (True, True)):
+                    headers = {'Authorization': token, 'Content-Type': 'application/json'}
+                    if opt_in:
+                        headers['X-Context-Trace'] = '1'
+                    if capture_sql:
+                        headers['X-Context-Capture-Sql'] = '1'
+                    req = urllib.request.Request(base + '/api/context/query',
+                        data=json.dumps({'sql': query}).encode(), headers=headers, method='POST')
+                    with urllib.request.urlopen(req, timeout=10) as response:
+                        assert json.loads(response.read())['rows'] == [[0]]
+                        trace_id = response.headers.get('X-Context-Request-Id')
+                    if not opt_in:
+                        assert not trace_id, 'ordinary requests must not create trace identifiers'
+                        continue
+                    assert trace_id
+                    path = '/api/context/traces/' + trace_id
+                    for attempt in range(50):
+                        trace = request('GET', path, token=token, expected=(200, 404))
+                        if trace.get('request_id') == trace_id:
+                            break
+                        time.sleep(.01)
+                    else:
+                        raise AssertionError('completed trace was not retrievable')
+                    assert trace['service'] == 'dealcontext'
+                    assert trace['user_id'] == agent['id']
+                    if capture_sql:
+                        assert trace.get('sql') == query
+                    else:
+                        assert not trace.get('sql')
+                    assert any(span['name'] == 'auth' for span in trace['spans'])
+                    request('GET', path, token=token2, expected=404)
+                    request('GET', path, token=admin, expected=403)
+                    request('GET', path, expected=401)
+
             with item('skill revision metadata is available only to authenticated agents'):
                 path = '/api/dealcontext/skill-version'
                 client_source = (ROOT / 'skills/dealcontext/scripts/dc.py').read_text()

@@ -134,6 +134,24 @@ Rules outside this list remain agent conventions documented in [workflows](skill
 
 See [schema](skills/dealcontext/references/schema.md), [workflows](skills/dealcontext/references/workflows.md), and [examples](skills/dealcontext/references/examples.md). Back up the data directory using PocketBase's supported backup procedure before upgrades. Review and test migration changes before applying them to a live CRM.
 
+## Optional performance traces
+
+The packaged configuration enables a bounded in-memory trace buffer with service
+`dealcontext`. Ordinary requests are not traced. An authenticated client must send
+`X-Context-Trace: 1`; capturing SQL text additionally requires
+`X-Context-Capture-Sql: 1`. The response supplies `X-Context-Request-Id` for
+`GET /api/context/traces/{request_id}`. Only the original account with the same
+current token key can retrieve that trace. Records expire after 120 seconds, can
+be evicted sooner at the buffer limits, and are lost on restart.
+
+Use ObserveContext's `capture --url https://crm.pocketcontext.com --service dealcontext-client --upload` wrapper around the installed `dc.py` to retrieve and
+upload client and server measurements. Add `--capture-sql` only when you want SQL
+text, including its literals, stored in ObserveContext. Sign in to ObserveContext
+separately before uploading; DealContext never receives that login. ObserveContext
+assigns ownership from the uploader's own account. Trace collection does not write
+server trace files or require a collector, extra container, or server-side
+ObserveContext credentials. Failed telemetry delivery must never retry a CRM write.
+
 ## Public enquiry form
 
 `POST /api/intake/enquiry` accepts the contact form of a website. It needs no login, and it is the only endpoint that stores data without one. Each accepted submission becomes a row in `enquiries` with `status: new`. Agents read the rows through SQL and triage them; see "Triage enquiries" in [workflows](skills/dealcontext/references/workflows.md).
@@ -338,7 +356,7 @@ python3 tests/account_access.py --binary ../pocketcontext/bin/pocketcontext
 python3 tests/realtime_access.py --binary ../pocketcontext/bin/pocketcontext
 ```
 
-The integration test creates a temporary database, provisions two agents, and exercises contact creation, stage changes, follow-ups, notes, deal closure, SQL joins, permissions, and field validation. It also checks directory synchronization and access controls, each server rule above with a rejected and an accepted write, superuser-only deletes, `created_by` and `updated_by` stamping, the `audit_log` rows for creates, updates, and deletes, and the batch API. It deletes its temporary state when finished.
+The integration test creates a temporary database, provisions two agents, verifies opt-in trace retrieval and separate SQL disclosure with cross-account isolation, and exercises contact creation, stage changes, follow-ups, notes, deal closure, SQL joins, permissions, and field validation. It also checks directory synchronization and access controls, each server rule above with a rejected and an accepted write, superuser-only deletes, `created_by` and `updated_by` stamping, the `audit_log` rows for creates, updates, and deletes, and the batch API. It deletes its temporary state when finished.
 
 The deployment test starts a server with the variables of the deployment contract and checks `/up`, the settings taken from the environment, the trusted proxy header, the rate limits per forwarded client address, a later start without the variables, and the agent password rules of the security migration. The container image has its own checks, see [Deploy with ONCE](#deploy-with-once).
 

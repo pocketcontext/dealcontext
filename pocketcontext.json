@@ -15,5 +15,12 @@
   },
   "timeoutMs": 2000,
   "maxRows": 500,
-  "maxBytes": 1048576
+  "maxBytes": 1048576,
+  "tracing": {
+    "enabled": true,
+    "service": "dealcontext",
+    "delivery": "buffer",
+    "captureSql": true,
+    "maxBytes": 16777216
+  }
 }
