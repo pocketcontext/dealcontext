@@ -4,5 +4,5 @@
 // workflow, permission, schema, or client changes; unrelated deploys do not bump it.
 routerAdd("GET", "/api/dealcontext/skill-version", (e) => {
   e.response.header().set("Cache-Control", "no-store");
-  return e.json(200, {recommendedRevision: 2});
+  return e.json(200, {recommendedRevision: 3});
 }, $apis.requireAuth("agents"));

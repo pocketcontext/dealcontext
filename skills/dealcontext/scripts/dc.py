@@ -32,7 +32,7 @@ ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 TIMEOUT = 30
 USER_AGENT = 'DealContext/1.0'
 # Bump with the server recommendation when installed skill behavior or guidance changes.
-SKILL_REVISION = 2
+SKILL_REVISION = 3
 SKILL_CHECK_TTL = 300
 SKILL_VERSION_PATH = '/api/dealcontext/skill-version'
 hidden = []  # The password and tokens. say() masks them in everything it prints.

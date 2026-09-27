@@ -97,3 +97,19 @@ JSON
 Remote commands automatically check the server's recommended skill revision, with a five-minute cache. If stderr recommends an update, tell the user and give the update instructions: `npx skills update dealcontext -g` for a global CLI install, or replace a manually copied skill with the current `skills/dealcontext` directory from `pocketcontext/dealcontext`. Continue the requested work; this warning does not change command JSON or exit codes. Do not install updates automatically. If the client cannot verify the revision, relay that warning without claiming the skill is current.
 
 Run `dc.py check` at the start of a session. It refreshes the revision check and compares the live schema with the reference files. An older server without version metadata still supports the schema comparison. The live schema from `dc.py schema` and the server's error messages are authoritative over the reference files. If `check` exits 3, use the live columns it lists, tell the user that the skill's reference files are out of date, provide the update instructions above, and continue with care: rules described in `references/schema.md` may have changed as well.
+
+## Optional request tracing
+
+When the user requests performance tracing, use the separately installed ObserveContext skill. Sign in to DealContext normally and to ObserveContext with your ordinary account (`OBSERVECONTEXT_URL` and `OBSERVECONTEXT_USER_EMAIL`). Run its client by absolute path; do not search for credentials or use a superuser.
+
+```sh
+python3 /path/to/observecontext/scripts/oc.py capture \
+  --url "$DEALCONTEXT_URL" --service dealcontext.client --upload \
+  /path/to/dealcontext/scripts/dc.py sql 'SELECT id FROM deals LIMIT 5'
+```
+
+Ordinary commands remain untraced. The wrapper captures SQL/schema and REST record/batch requests in this Python process, retrieves requester-owned server timings, and uploads them to one private ObserveContext operation. It does not capture prompts or full agent sessions. Source and ObserveContext authentication are separate; the server holds no ObserveContext credentials.
+
+Add `--capture-sql` only when SQL text, including literals, may be retained by the owner and operator-authorized read-all viewers. This enables client SQL capture even if server SQL capture is disabled; server capture additionally requires `captureSql: true`. Headers, credentials, request bodies and query results are excluded. Timings alone are the default.
+
+Telemetry failure preserves the command exit status; `oc.py flush` retries the private account-bound upload queue. Source traces expire after 120 seconds and cannot be retrieved indefinitely. Capture adds retrieval/upload latency. Use `oc.py dashboard` for the private loopback dashboard; HTTP measurements exclude telemetry delivery and overlapping phases must not be summed.
