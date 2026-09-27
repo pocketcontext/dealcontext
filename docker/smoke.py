@@ -24,8 +24,8 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parent.parent
 DC = ROOT / 'skills' / 'dealcontext' / 'scripts' / 'dc.py'
-# Docker Hub no longer serves minio/minio. Tag and index digest read from quay.io's registry API.
-MINIO_IMAGE = 'quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e'
+# CI-only fixture built from pinned official MinIO source; no withdrawn registry dependency.
+MINIO_IMAGE = 'dealcontext-minio-fixture:9e49d5e-7394ce0'
 STOP_LIMIT = 10  # seconds. `docker stop` waits 10 seconds by default before it kills.
 JWT = re.compile(r'eyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}')
 
@@ -353,6 +353,8 @@ def restore(image, tmp, run_id):
     mc_env = {'MC_HOST_drill': secret(f'http://{minio_user}:{minio_password}@127.0.0.1:9000')}
     agent_email, agent_password = 'agent@example.test', secret(secrets.token_urlsafe(24))
 
+    step('building the CI-only MinIO fixture from pinned official source commits')
+    docker('build', '--file', str(ROOT / 'docker/minio.Dockerfile'), '--tag', MINIO_IMAGE, str(ROOT / 'docker'), timeout=1200)
     step('starting MinIO as the S3 service on a private docker network')
     docker('network', 'create', network)
     networks.append(network)
