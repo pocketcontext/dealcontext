@@ -4,3 +4,9 @@ pb_data/
 __pycache__/
 *.pyc
 bin/
+
+ui/node_modules/
+ui/dist/
+ui/test-results/
+ui/playwright-report/
+ui/*.tsbuildinfo

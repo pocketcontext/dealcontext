@@ -54,3 +54,18 @@ jobs:
         run: |
           python3 dealcontext/tests/account_access.py --binary pocketcontext/bin/pocketcontext
           python3 dealcontext/tests/realtime_access.py --binary pocketcontext/bin/pocketcontext
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - name: Build and test authenticated reader
+        run: |
+          npm install --global pnpm@10.33.2
+          cd dealcontext/ui
+          pnpm install --frozen-lockfile
+          pnpm typecheck
+          pnpm test
+          pnpm build
+          pnpm exec playwright install --with-deps chromium
+          pnpm e2e
+          cd ../..
+          python3 dealcontext/tests/reader.py --binary pocketcontext/bin/pocketcontext --browser

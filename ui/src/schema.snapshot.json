@@ -1,0 +1,523 @@
+{
+  "tables": [
+    {
+      "name": "activities",
+      "columns": [
+        {
+          "name": "completed_at",
+          "type": "TEXT"
+        },
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "deal",
+          "type": "TEXT"
+        },
+        {
+          "name": "description",
+          "type": "TEXT"
+        },
+        {
+          "name": "done",
+          "type": "BOOLEAN"
+        },
+        {
+          "name": "due_at",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "kind",
+          "type": "TEXT"
+        },
+        {
+          "name": "organization",
+          "type": "TEXT"
+        },
+        {
+          "name": "owner",
+          "type": "TEXT"
+        },
+        {
+          "name": "person",
+          "type": "TEXT"
+        },
+        {
+          "name": "subject",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "agent_directory",
+      "columns": [
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "name",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "audit_log",
+      "columns": [
+        {
+          "name": "action",
+          "type": "TEXT"
+        },
+        {
+          "name": "actor",
+          "type": "TEXT"
+        },
+        {
+          "name": "actor_type",
+          "type": "TEXT"
+        },
+        {
+          "name": "changes",
+          "type": "JSON"
+        },
+        {
+          "name": "collection",
+          "type": "TEXT"
+        },
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "record",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "deals",
+      "columns": [
+        {
+          "name": "closed_at",
+          "type": "TEXT"
+        },
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "currency",
+          "type": "TEXT"
+        },
+        {
+          "name": "expected_close",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "lost_reason",
+          "type": "TEXT"
+        },
+        {
+          "name": "organization",
+          "type": "TEXT"
+        },
+        {
+          "name": "owner",
+          "type": "TEXT"
+        },
+        {
+          "name": "person",
+          "type": "TEXT"
+        },
+        {
+          "name": "stage",
+          "type": "TEXT"
+        },
+        {
+          "name": "status",
+          "type": "TEXT"
+        },
+        {
+          "name": "title",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "value_minor",
+          "type": "NUMERIC"
+        }
+      ]
+    },
+    {
+      "name": "enquiries",
+      "columns": [
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "deal",
+          "type": "TEXT"
+        },
+        {
+          "name": "details",
+          "type": "JSON"
+        },
+        {
+          "name": "email",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "name",
+          "type": "TEXT"
+        },
+        {
+          "name": "person",
+          "type": "TEXT"
+        },
+        {
+          "name": "source",
+          "type": "TEXT"
+        },
+        {
+          "name": "status",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "utm_campaign",
+          "type": "TEXT"
+        },
+        {
+          "name": "utm_medium",
+          "type": "TEXT"
+        },
+        {
+          "name": "utm_source",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "messages",
+      "columns": [
+        {
+          "name": "body",
+          "type": "TEXT"
+        },
+        {
+          "name": "channel",
+          "type": "TEXT"
+        },
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "direction",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "owner",
+          "type": "TEXT"
+        },
+        {
+          "name": "person",
+          "type": "TEXT"
+        },
+        {
+          "name": "sent_at",
+          "type": "TEXT"
+        },
+        {
+          "name": "source_url",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "notes",
+      "columns": [
+        {
+          "name": "body",
+          "type": "TEXT"
+        },
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "deal",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "organization",
+          "type": "TEXT"
+        },
+        {
+          "name": "owner",
+          "type": "TEXT"
+        },
+        {
+          "name": "person",
+          "type": "TEXT"
+        },
+        {
+          "name": "source_url",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "organizations",
+      "columns": [
+        {
+          "name": "address",
+          "type": "TEXT"
+        },
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "name",
+          "type": "TEXT"
+        },
+        {
+          "name": "owner",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "website",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "people",
+      "columns": [
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "email",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "job_title",
+          "type": "TEXT"
+        },
+        {
+          "name": "linkedin_url",
+          "type": "TEXT"
+        },
+        {
+          "name": "name",
+          "type": "TEXT"
+        },
+        {
+          "name": "organization",
+          "type": "TEXT"
+        },
+        {
+          "name": "owner",
+          "type": "TEXT"
+        },
+        {
+          "name": "phone",
+          "type": "TEXT"
+        },
+        {
+          "name": "pronouns",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "pipelines",
+      "columns": [
+        {
+          "name": "active",
+          "type": "BOOLEAN"
+        },
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "name",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        }
+      ]
+    },
+    {
+      "name": "stages",
+      "columns": [
+        {
+          "name": "created",
+          "type": "TEXT"
+        },
+        {
+          "name": "created_by",
+          "type": "TEXT"
+        },
+        {
+          "name": "id",
+          "type": "TEXT"
+        },
+        {
+          "name": "name",
+          "type": "TEXT"
+        },
+        {
+          "name": "pipeline",
+          "type": "TEXT"
+        },
+        {
+          "name": "position",
+          "type": "NUMERIC"
+        },
+        {
+          "name": "probability",
+          "type": "NUMERIC"
+        },
+        {
+          "name": "updated",
+          "type": "TEXT"
+        },
+        {
+          "name": "updated_by",
+          "type": "TEXT"
+        }
+      ]
+    }
+  ]
+}

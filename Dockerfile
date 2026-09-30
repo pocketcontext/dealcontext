@@ -11,6 +11,14 @@
 # Not pinned: the Debian packages ca-certificates and tini, which come from the stable archive
 # at build time so that certificate updates are included.
 
+FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS reader
+WORKDIR /ui
+RUN npm install --global pnpm@10.33.2
+COPY ui/package.json ui/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY ui/ ./
+RUN pnpm typecheck && pnpm test && pnpm build
+
 FROM golang:1.27.1-trixie@sha256:a4d1d139d0b0e7313de2fbe7cf4e27e3b934c164c5c58b33af44af2e9ba2fc4f AS build
 ARG TARGETARCH
 # Never download another Go toolchain: a go.mod that asks for a newer Go fails the build instead.
@@ -67,6 +75,7 @@ WORKDIR /app
 COPY POCKETCONTEXT_VERSION pocketcontext.json ./
 COPY pb_migrations/ ./pb_migrations/
 COPY pb_hooks/ ./pb_hooks/
+COPY --from=reader /ui/dist/ ./ui/dist/
 
 # The container runs as root. ONCE creates and mounts the /storage volume and offers no option to
 # set its owner or the container's user, and the server binds port 80.

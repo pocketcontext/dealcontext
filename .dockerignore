@@ -7,3 +7,13 @@
 !pb_hooks/*.js
 !docker/entrypoint.sh
 !docker/litestream.yml
+
+!ui/
+ui/**
+!ui/package.json
+!ui/pnpm-lock.yaml
+!ui/index.html
+!ui/tsconfig.json
+!ui/vite.config.ts
+!ui/src/
+!ui/src/**
