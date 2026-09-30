@@ -383,9 +383,18 @@ The destination survives password or configured Google sign-in and reload.
 Records are read through the existing authenticated SQL endpoint. The browser never
 queries auth collections, writes business records, or acknowledges anything on opening.
 Relationship labels use only authorized SQL; unavailable targets reveal no resolved
-label. User-directory records contain display names only. Tokens are stored per tab in
-session storage, cleared on sign-out; refresh on focus or the **Refresh** button reloads
-current data. Markdown never executes HTML or loads remote images. Record metadata is
+label. User-directory records contain display names only.
+
+The official PocketBase JavaScript SDK stores application tokens in an app-specific
+`LocalAuthStore` in local storage. Sign-in survives reloads, new tabs and browser
+restarts until expiry or sign-out. Authentication changes synchronize across tabs;
+sign-out clears displayed data and stored credentials but does not revoke copied
+tokens. Tokens are accessible to browser JavaScript. Old per-tab sessions are discarded
+on upgrade, requiring one fresh sign-in. Active sessions renew on startup/focus at
+most once per five minutes per tab; rejected credentials require sign-in. Refresh on focus or
+the **Refresh** button reloads current data.
+
+Markdown never executes HTML or loads remote images. Record metadata is
 collapsed below business fields. Currency amounts retain their original minor-unit
 values alongside formatted currency. No mixed-currency totals are calculated.
 

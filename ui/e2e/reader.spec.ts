@@ -22,7 +22,7 @@ const row = (i = 0) => ({
 });
 test.beforeEach(async ({ page }) => {
   await page.route(
-    "**/api/collections/" + app.authCollection + "/auth-with-password",
+    "**/api/collections/" + app.authCollection + "/auth-*",
     (r) =>
       r.fulfill({
         json: {
