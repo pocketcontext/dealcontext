@@ -73,3 +73,42 @@ describe("session race protection", () => {
     expect(pb.authStore.token).toBe("");
   });
 });
+
+it("renewal keeps the same identity generation and accepts its pending reads", async () => {
+  const { sessionEpoch } = await import("./api");
+  pb.authStore.save(token, record);
+  const started = sessionEpoch();
+  vi.spyOn(pb, "send").mockImplementation(async () => {
+    pb.authStore.save(token + "renewed", record);
+    return { columns: ["id"], rows: [["same-account"]], truncated: false };
+  });
+  await expect(query("SELECT id FROM records")).resolves.toEqual([{id: "same-account"}]);
+  expect(sessionEpoch()).toBe(started);
+});
+
+it("a new account refresh never waits for the previous account's pending renewal", async () => {
+  vi.spyOn(Date, "now").mockReturnValue(2000001800000);
+  let finishFirst: (value: unknown) => void = () => {};
+  const request = vi.spyOn(PocketBase.prototype, "send")
+    .mockImplementationOnce(() => new Promise(resolve => { finishFirst = resolve; }))
+    .mockResolvedValueOnce({ token: token + "second-renewed", record: {...record, id: "second"} });
+  pb.authStore.save(token, record);
+  const first = refreshSession();
+  pb.authStore.save(token + "second", {...record, id: "second"});
+  await refreshSession();
+  expect(request).toHaveBeenCalledTimes(2);
+  expect(pb.authStore.record?.id).toBe("second");
+  finishFirst({token: token + "old-renewed", record});
+  await first;
+  expect(pb.authStore.record?.id).toBe("second");
+  expect(pb.authStore.token).toBe(token + "second-renewed");
+});
+
+it("adopts another tab's same-account renewal without renewing it back", async () => {
+  vi.spyOn(Date, "now").mockReturnValue(2000002400000);
+  pb.authStore.save(token, record);
+  pb.authStore.save(token + "external-renewal", record);
+  const request = vi.spyOn(PocketBase.prototype, "send");
+  await refreshSession();
+  expect(request).not.toHaveBeenCalled();
+});

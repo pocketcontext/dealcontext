@@ -12,18 +12,32 @@ if (!store.isValid || store.record?.collectionName !== app.authCollection)
   store.clear();
 export const pb = new PocketBase(location.origin, store);
 pb.autoCancellation(false);
-let epoch = 0;
-export const sessionEpoch = () => epoch;
+let authEpoch = 0;
+let identityEpoch = 0;
+const identity = () =>
+  store.token && store.record
+    ? `${store.record.collectionName}/${store.record.id}`
+    : "";
+let currentIdentity = identity();
+export const sessionEpoch = () => identityEpoch;
 store.onChange(() => {
-  epoch++;
-  // Future record subscriptions must be established again for the new session.
-  void pb.realtime.unsubscribe().catch(() => {});
+  authEpoch++;
+  const next = identity();
+  if (next !== currentIdentity) {
+    currentIdentity = next;
+    identityEpoch++;
+    void pb.realtime.unsubscribe().catch(() => {});
+  } else if (next) {
+    // Adopt another tab's renewal instead of renewing it back across tabs.
+    refreshedToken = store.token;
+    refreshedAt = Date.now();
+  }
 });
 
 // Authenticate in an isolated SDK store: late responses cannot resurrect logout
 // or overwrite an account selected in another tab.
 export async function signIn(email: string, password: string, google = false) {
-  const started = epoch;
+  const started = authEpoch;
   const token = store.token;
   const client = new PocketBase(location.origin, new BaseAuthStore());
   try {
@@ -31,38 +45,46 @@ export async function signIn(email: string, password: string, google = false) {
     const result = google
       ? await auth.authWithOAuth2({ provider: "google" })
       : await auth.authWithPassword(email, password);
-    if (epoch !== started || store.token !== token)
+    if (authEpoch !== started || store.token !== token)
       throw Error("Session changed");
     refreshedAt = Date.now();
+    refreshedToken = result.token;
     store.save(result.token, result.record);
   } finally {
     void client.realtime.unsubscribe().catch(() => {});
   }
 }
 let refreshedAt = 0;
-let refreshing: Promise<void> | undefined;
+let refreshedToken = "";
+let refreshing: { token: string; promise: Promise<void> } | undefined;
 export function refreshSession(): Promise<void> {
   if (!store.isValid) {
     if (store.token) store.clear();
     return Promise.resolve();
   }
-  if (refreshing) return refreshing;
-  if (Date.now() - refreshedAt < 300000) return Promise.resolve();
-  refreshedAt = Date.now();
-  const started = epoch;
   const token = store.token;
+  if (refreshing?.token === token) return refreshing.promise;
+  if (refreshedToken === token && Date.now() - refreshedAt < 300000)
+    return Promise.resolve();
+  refreshedAt = Date.now();
+  refreshedToken = token;
+  const started = authEpoch;
   const client = new PocketBase(location.origin, new BaseAuthStore());
-  client.authStore.save(store.token, store.record);
-  refreshing = client
+  client.authStore.save(token, store.record);
+  const request = { token, promise: Promise.resolve() };
+  request.promise = client
     .collection(app.authCollection)
     .authRefresh()
     .then((result) => {
-      if (epoch === started && store.token === token)
+      if (authEpoch === started && store.token === token) {
+        refreshedToken = result.token;
+        refreshedAt = Date.now();
         store.save(result.token, result.record);
+      }
     })
     .catch((error: { status?: number }) => {
       if (
-        epoch === started &&
+        authEpoch === started &&
         store.token === token &&
         [401, 403].includes(error.status || 0)
       )
@@ -70,9 +92,10 @@ export function refreshSession(): Promise<void> {
       // Network failures keep the current session; another focus may retry later.
     })
     .finally(() => {
-      refreshing = undefined;
+      if (refreshing === request) refreshing = undefined;
     });
-  return refreshing;
+  refreshing = request;
+  return request.promise;
 }
 export type Row = Record<string, unknown>;
 export const ident = (s: string) => {
@@ -81,7 +104,8 @@ export const ident = (s: string) => {
 };
 export const literal = (s: string) => "'" + s.replaceAll("'", "''") + "'";
 export async function query(sql: string): Promise<Row[]> {
-  const started = epoch;
+  const started = identityEpoch;
+  const owner = identity();
   const token = store.token;
   try {
     const r = await pb.send<{
@@ -89,7 +113,7 @@ export async function query(sql: string): Promise<Row[]> {
       rows: unknown[][];
       truncated: boolean;
     }>("/api/context/query", { method: "POST", body: { sql } });
-    if (started !== epoch || store.token !== token)
+    if (started !== identityEpoch || identity() !== owner)
       throw Error("Session changed");
     if (r.truncated) throw Error("Response limit reached. Narrow your search.");
     return r.rows.map((row) =>
@@ -98,7 +122,7 @@ export async function query(sql: string): Promise<Row[]> {
   } catch (e) {
     if (
       [401, 403].includes((e as { status?: number }).status || 0) &&
-      started === epoch &&
+      started === identityEpoch &&
       token === store.token
     )
       store.clear();

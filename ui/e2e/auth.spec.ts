@@ -118,3 +118,48 @@ test("old tab credentials and expired persistent tokens cannot restore a session
     await page.evaluate((key) => localStorage.getItem(key), key),
   ).toBeNull();
 });
+
+test("same-account token renewal retains the reader and visible search results", async ({page, context}) => {
+  await setup(context);
+  await page.goto(`/#/${entity.table}/${id}`);
+  await login(page);
+  await expect(page.locator("main h1")).toContainText("First private record");
+  await expect(page.locator(".results .result")).toHaveCount(1);
+  await page.locator("main").evaluate(node => node.setAttribute("data-retained", "yes"));
+  let renewals = 0;
+  page.on("request", request => { if (request.url().endsWith("/auth-refresh")) renewals++; });
+  await page.evaluate(async () => {
+    const {pb} = await import(/* @vite-ignore */ "/src/" + "api.ts");
+    pb.authStore.save(pb.authStore.token + "renewed", pb.authStore.record);
+  });
+  await expect(page.locator('main[data-retained="yes"]')).toBeVisible();
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  // Wait through another browser task after the synchronous auth listeners.
+  await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 50)));
+  expect(renewals).toBe(0);
+  await expect(page.locator(".results .result")).toHaveCount(1);
+});
+
+test("tabs adopt distinct slow renewal tokens without a refresh loop", async ({page, context}) => {
+  await setup(context);
+  let renewals = 0;
+  await context.route("**/api/collections/*/auth-refresh", async route => {
+    const number = ++renewals;
+    await new Promise(resolve => setTimeout(resolve, 100));
+    const result = auth("first@example.com");
+    await route.fulfill({json: {...result, token: result.token + number}});
+  });
+  await page.goto(`/#/${entity.table}/${id}`);
+  await login(page);
+  await expect(page.locator("main h1")).toBeVisible();
+  const other = await context.newPage();
+  await other.goto(`/#/${entity.table}/${id}`);
+  await expect.poll(() => renewals).toBe(1);
+  await expect.poll(() => page.evaluate(key => JSON.parse(localStorage.getItem(key) || "{}").token, key)).toBe(token("first@example.com") + "1");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await other.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await new Promise(resolve => setTimeout(resolve, 350));
+  expect(renewals).toBe(1);
+  await expect(page.locator("main h1")).toBeVisible();
+  await expect(other.locator("main h1")).toBeVisible();
+});
