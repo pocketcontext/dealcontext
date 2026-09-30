@@ -121,7 +121,7 @@ fi
 if [ -n "${DEALCONTEXT_SUPERUSER_EMAIL:-}" ] && [ -n "${DEALCONTEXT_SUPERUSER_PASSWORD:-}" ]; then
 	log "upserting the superuser from DEALCONTEXT_SUPERUSER_EMAIL"
 	# shellcheck disable=SC2046 # see serve
-	if ! "$SERVER" superuser upsert "$DEALCONTEXT_SUPERUSER_EMAIL" "$DEALCONTEXT_SUPERUSER_PASSWORD" $(app_flags); then
+	if ! "$SERVER" superuser upsert $(app_flags) -- "$DEALCONTEXT_SUPERUSER_EMAIL" "$DEALCONTEXT_SUPERUSER_PASSWORD"; then
 		die "superuser upsert failed"
 	fi
 elif [ -n "${DEALCONTEXT_SUPERUSER_EMAIL:-}" ]; then
