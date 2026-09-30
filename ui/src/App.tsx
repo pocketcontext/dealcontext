@@ -347,11 +347,12 @@ export default function App() {
     return () => window.removeEventListener("hashchange", listener);
   }, []);
   function navigate(table: string, id: string, params: URLSearchParams) {
-    location.hash =
-      "/" +
-      table +
-      (id ? "/" + id : "") +
-      (params.size ? "?" + params.toString() : "");
+    const hash = "#/" + table + (id ? "/" + id : "") + (params.size ? "?" + params.toString() : "");
+    // Update controlled inputs synchronously: a delayed hashchange must not erase new typing.
+    history.pushState(null, "", hash);
+    const next = parseRoute();
+    setRoute(next);
+    setQ(next.params.get("q") || "");
   }
   useEffect(() => {
     if (q === (route.params.get("q") || "")) return;

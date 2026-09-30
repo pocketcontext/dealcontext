@@ -102,6 +102,8 @@ test("deep links survive login and reload; related records are linked and Markdo
     await expect(page).toHaveURL(
       new RegExp("/" + target.table + "/" + targetId),
     );
+    await page.goBack();
+    await expect(page.getByRole("heading",{level:1})).toContainText("Synthetic");
   }
 });
 test("mobile collection search uses server pagination and handles empty results", async ({
@@ -113,6 +115,7 @@ test("mobile collection search uses server pagination and handles empty results"
   await page.getByRole("button", { name: "Browse", exact: true }).click();
   await page.getByRole("button", { name: "Next", exact: true }).click();
   await expect(page.locator(".results")).toContainText("Synthetic 31");
+  await page.getByRole("button", {name:"Previous",exact:true}).click();
   await page.getByRole("searchbox").fill("missing");
   await expect(page.getByText("No matching records.")).toBeVisible();
   expect(
