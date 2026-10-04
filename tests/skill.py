@@ -352,6 +352,7 @@ def version_checks(dc, tmp, installed, tokens):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--binary', required=True)
+    parser.add_argument('--client', help='Executable release launcher to exercise; package mutation checks still use the local test copy')
     parser.add_argument('--write-schema', action='store_true', help='rewrite skills/dealcontext/references/schema.json and exit')
     args = parser.parse_args()
     binary = str(Path(args.binary).resolve())
@@ -364,7 +365,7 @@ def main():
         shutil.copytree(SKILL, installed, ignore=shutil.ignore_patterns('__pycache__'))
         shutil.copytree(ROOT / 'src/dealcontext_client', installed / 'dealcontext_client', ignore=shutil.ignore_patterns('__pycache__'))
         environment = {'PYTHONDONTWRITEBYTECODE': '1', 'PATH': os.environ.get('PATH', ''), 'HOME': str(tmp / 'home'), 'XDG_CACHE_HOME': str(tmp / 'cache'),
-                       'DEALCONTEXT_URL': base, 'DEALCONTEXT_AGENT_EMAIL': EMAIL, 'DEALCONTEXT_AGENT_PASSWORD': PASSWORD}
+                       'UV_PYTHON': sys.executable, 'UV_CACHE_DIR': str(tmp / 'uv-cache'), 'DEALCONTEXT_URL': base, 'DEALCONTEXT_AGENT_EMAIL': EMAIL, 'DEALCONTEXT_AGENT_PASSWORD': PASSWORD}
         (tmp / 'home').mkdir()
         (tmp / 'elsewhere').mkdir()
         cache = tmp / 'cache' / 'dealcontext'
@@ -372,8 +373,10 @@ def main():
 
         def dc(*argv, expect=0, stdin=None, **overrides):
             """Run the copied dealcontext from an unrelated directory. Returns (stdout, stderr)."""
+            local = overrides.pop('_local', False)
             env = {key: value for key, value in {**environment, **overrides}.items() if value is not None}
-            done = subprocess.run([sys.executable, str(installed / 'dealcontext'), *argv], cwd=tmp / 'elsewhere', env=env, input=stdin, capture_output=True, text=True, timeout=120)
+            command = [str(Path(args.client).resolve())] if args.client and not local else [sys.executable, str(installed / 'dealcontext')]
+            done = subprocess.run([*command, *argv], cwd=tmp / 'elsewhere', env=env, input=stdin, capture_output=True, text=True, timeout=120)
             outputs.append(done.stdout + done.stderr)
             assert done.returncode == expect, (argv, 'exit code', done.returncode, 'expected', expect, done.stdout, done.stderr)
             assert 'Traceback' not in done.stderr, done.stderr
@@ -445,7 +448,7 @@ def main():
             deals = next(table for table in changed['tables'] if table['name'] == 'deals')
             deals['columns'] = [column for column in deals['columns'] if column['name'] != 'currency'] + [{'name': 'discount', 'type': 'NUMERIC'}]
             snapshot.write_text(json.dumps(changed))
-            stdout, _ = dc('check', expect=3)
+            stdout, _ = dc('check', expect=3, _local=True)
             for expected in ('table notes', 'table invoices', 'deals.currency', 'deals.discount'):
                 assert expected in stdout, (expected, stdout)
             snapshot.write_text(original)
@@ -566,7 +569,7 @@ def main():
                 stub.server_close()
                 thread.join()
 
-        version_checks(dc, tmp, installed, tokens)
+        version_checks(lambda *argv, **options: dc(*argv, _local=True, **options), tmp, installed, tokens)
 
         with item('HTTP 409 exits 4, also inside a batch (stub server: the real 409 needs two racing writes)'):
             stub = HTTPServer(('127.0.0.1', 0), Conflict)
