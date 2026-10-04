@@ -56,8 +56,8 @@ Set `DEALCONTEXT_GOOGLE_WORKSPACE_DOMAIN=pocketcontext.com` to enable JIT. The s
 ```sh
 export DEALCONTEXT_URL=https://crm.pocketcontext.com
 export DEALCONTEXT_AGENT_EMAIL=you@pocketcontext.com
-python3 skills/dealcontext/scripts/dc.py login --google
-python3 skills/dealcontext/scripts/dc.py whoami
+skills/dealcontext/dealcontext login --google
+skills/dealcontext/dealcontext whoami
 ```
 
 For a headless SSH session, connect from the browser's computer with `ssh -L 8765:127.0.0.1:8765 user@ssh-host`, run the login there, and open the printed private URL locally. The CLI validates callback state and uses PKCE. It caches only the DealContext token, never provider tokens. Seven-day tokens renew during active CLI use, at most once per five minutes or near expiry; `whoami` always refreshes. After seven days without renewal, browser login is required again. The applications have separate accounts, tokens, and offboarding controls.
@@ -66,7 +66,7 @@ An operator disables an account with `PATCH /api/collections/agents/records/<id>
 
 ## Install the skill on another computer
 
-The computer that operates the CRM needs Python 3, the skill, a server URL, and an account email. Use Google login or an account password. It does not need a clone of this repository. Install the skill with the [`skills` CLI](https://github.com/vercel-labs/skills), which needs Node.js:
+The computer that operates the CRM needs uv, Python 3.11 or later, the skill, a server URL, and an account email. Use Google login or an account password. It does not need a clone of this repository. Install the skill with the [`skills` CLI](https://github.com/vercel-labs/skills), which needs Node.js:
 
 ```sh
 npx skills add pocketcontext/dealcontext --list                                        # shows the skill found in skills/dealcontext
@@ -88,17 +88,17 @@ Use an `https` URL for a server that is not on the same computer; the password a
 Check the setup from the installed skill directory:
 
 ```sh
-python3 scripts/dc.py whoami   # logs in; prints the agent ID, name, and server URL
-python3 scripts/dc.py check    # exit 0: the skill's schema snapshot matches the server; exit 3: lists the differences
+./dealcontext whoami   # logs in; prints the agent ID, name, and server URL
+./dealcontext check    # exit 0: the skill's schema snapshot matches the server; exit 3: lists the differences
 ```
 
-`dc.py` uses only the Python standard library. It caches the login token in `$XDG_CACHE_HOME/dealcontext/` (default `~/.cache/dealcontext/`) with mode 0600, never prints the password or token, and has no delete command. `dc.py logout` removes the cached token and version metadata. When `check` reports differences, the server is newer or older than the installed skill: the live schema is authoritative, and updating the skill brings the reference files back in line.
+`dealcontext` runs a pinned Python package through uv. It caches the login token in `$XDG_CACHE_HOME/dealcontext/` (default `~/.cache/dealcontext/`) with mode 0600, never prints the password or token, and has no delete command. `dealcontext logout` removes the cached token and version metadata. When `check` reports differences, the server is newer or older than the installed skill: the live schema is authoritative, and updating the skill brings the reference files back in line.
 
 Remote commands automatically compare the installed skill revision with `GET /api/dealcontext/skill-version`, which requires an agent login and returns `{"recommendedRevision":2}`. If the server recommends a newer revision, the client warns on stderr with update instructions; normal command JSON and exit codes are unchanged. The assistant must relay that warning to the user. The client never installs updates or blocks operations because of a revision mismatch.
 
-Version metadata is cached separately from the login token for five minutes, scoped to the server URL, account email, and installed skill revision. `dc.py check` always refreshes it and still compares the live schema with the snapshot. `newid` and `logout` make no requests. With an older server returning 404, commands continue silently and `dc.py check` still provides schema comparison. Other metadata failures produce a warning and the requested command continues.
+Version metadata is cached separately from the login token for five minutes, scoped to the server URL, account email, and installed skill revision. `dealcontext check` always refreshes it and still compares the live schema with the snapshot. `newid` and `logout` make no requests. With an older server returning 404, commands continue silently and `dealcontext check` still provides schema comparison. Other metadata failures produce a warning and the requested command continues.
 
-Already-installed clients need one update before automatic notifications work. Their existing `dc.py check` detects schema differences, such as the new `agent_directory`, but cannot detect a release that changes only workflows or documentation. Update with `npx skills update dealcontext -g` for a global CLI install, or replace a manually copied skill directory with the current `skills/dealcontext` directory.
+Already-installed clients need one update before automatic notifications work. Their existing `dealcontext check` detects schema differences, such as the new `agent_directory`, but cannot detect a release that changes only workflows or documentation. Update with `npx skills update dealcontext -g` for a global CLI install, or replace a manually copied skill directory with the current `skills/dealcontext` directory.
 
 The client sends `User-Agent: DealContext/1.0` on every request, including login.
 This identifies agent traffic to proxies that reject Python's generic user-agent.
@@ -144,7 +144,7 @@ The packaged configuration enables a bounded in-memory trace buffer with service
 current token key can retrieve that trace. Records expire after 120 seconds, can
 be evicted sooner at the buffer limits, and are lost on restart.
 
-Use ObserveContext's `capture --url https://crm.pocketcontext.com --service dealcontext-client --upload` wrapper around the installed `dc.py` to retrieve and
+Use ObserveContext's `capture --url https://crm.pocketcontext.com --service dealcontext-client --upload` wrapper around the installed `dealcontext` to retrieve and
 upload client and server measurements. Add `--capture-sql` only when you want SQL
 text, including its literals, stored in ObserveContext. Sign in to ObserveContext
 separately before uploading; DealContext never receives that login. ObserveContext
@@ -336,13 +336,13 @@ With Docker installed, the same checks run locally:
 ```sh
 docker build -t dealcontext:ci .
 python3 docker/smoke.py config --image dealcontext:ci    # startup errors for missing configuration
-python3 docker/smoke.py smoke --image dealcontext:ci     # start, provision an agent, dc.py whoami, check, batch, stop, start again
+python3 docker/smoke.py smoke --image dealcontext:ci     # start, provision an agent, dealcontext whoami, check, batch, stop, start again
 python3 docker/smoke.py restore --image dealcontext:ci   # the restore drill
 ```
 
 ## Verify
 
-For a change that users need in their installed skill, increment the recommendation in `pb_hooks/skill_version.pb.js` and `SKILL_REVISION` in `skills/dealcontext/scripts/dc.py` together. The skill revision is independent of the server release: unrelated releases do not need a bump. Tests check that the published recommendation and bundled client agree.
+For a change that users need in their installed skill, increment the recommendation in `pb_hooks/skill_version.pb.js` and `SKILL_REVISION` in `skills/dealcontext/dealcontext` together. The skill revision is independent of the server release: unrelated releases do not need a bump. Tests check that the published recommendation and bundled client agree.
 
 ```sh
 python3 tests/integration.py --binary ../pocketcontext/bin/pocketcontext
@@ -362,7 +362,7 @@ The deployment test starts a server with the variables of the deployment contrac
 
 The intake test posts to `/api/intake/enquiry` on a temporary server: the payload the PocketContext website sends, validation errors, the body limit, the honeypot, duplicates, parallel submissions, the rate limit per forwarded client address, the CORS preflight for an allowed and a disallowed origin, notifications to multiple enabled recipients with a local SMTP sink, recipient permissions and uniqueness, independent delivery failures, SQL reads of `details`, what agents may change, the `audit_log` rows, and that accepted submissions leave no request log entry.
 
-The skill test checks the skill's frontmatter and links, copies `skills/dealcontext` to a temporary directory outside the repository, and runs `dc.py` there against a temporary server with a temporary `HOME`: configuration errors, the token cache, every command, batch success and failure, recovery from a rejected token, exit codes, and that the password and token never reach the output. Its `check` step fails when a migration changes the SQL-readable tables or columns. Regenerate the snapshot and review the reference files:
+The skill test checks the skill's frontmatter and links, copies `skills/dealcontext` to a temporary directory outside the repository, and runs `dealcontext` there against a temporary server with a temporary `HOME`: configuration errors, the token cache, every command, batch success and failure, recovery from a rejected token, exit codes, and that the password and token never reach the output. Its `check` step fails when a migration changes the SQL-readable tables or columns. Regenerate the snapshot and review the reference files:
 
 ```sh
 python3 tests/skill.py --binary ../pocketcontext/bin/pocketcontext --write-schema
@@ -422,3 +422,9 @@ mocked browser tests additionally cover query escaping, malformed routes, relati
 labels, and inert Markdown. Generated assets are not committed.
 For browser Google OAuth, register the application's own
 `https://<application-host>/api/oauth2-redirect` URI in its existing OAuth client.
+
+## Packaged CLI development
+
+Install uv, then run `uv venv` and `uv pip install -e .`. Activate `.venv` before running the Python validation commands above. The full-name command is `dealcontext`; old script paths and short aliases are removed. The installed skill launcher requires uv and Python 3.11 or later and fetches its package at a full Git commit. Initial installation requires network access.
+
+The implementation and bundled schema live in `src/dealcontext_client/`; keep its schema snapshot identical to `skills/dealcontext/references/schema.json`. Publish and test the package commit before updating the launcher to that commit. The ObserveContext dependency is pinned separately. Tracing is inactive unless explicitly enabled by `observecontext capture -- dealcontext ...`; capture failures must preserve the command result.

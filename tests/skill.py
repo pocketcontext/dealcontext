@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Test the installable skill in skills/dealcontext; no third-party Python dependencies.
+"""Test the installable skill in skills/dealcontext; requires the installed client package.
 
   python3 tests/skill.py --binary /path/to/pocketcontext
   python3 tests/skill.py --binary /path/to/pocketcontext --write-schema
 
 The first form checks the skill's files, then copies the skill outside the repository and runs its
-scripts/dc.py against a temporary server. The second form rewrites skills/dealcontext/references/schema.json
+dealcontext against a temporary server. The second form rewrites skills/dealcontext/references/schema.json
 from a temporary server; run it after a migration changes the SQL-readable tables or columns.
 """
 import argparse
@@ -28,7 +28,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / 'skills' / 'dealcontext'
-SKILL_REVISION = int(re.search(r'^SKILL_REVISION = (\d+)$', (SKILL / 'scripts' / 'dc.py').read_text(), re.MULTILINE).group(1))
+SKILL_REVISION = int(re.search(r'^SKILL_REVISION = (\d+)$', (ROOT / 'src/dealcontext_client/cli.py').read_text(), re.MULTILINE).group(1))
 EMAIL, PASSWORD = 'skill-agent@example.com', 'SkillAgentPassword123!'
 FORBIDDEN = ['POCKETBASE_ADMIN', '.envrc', '.env.admin', '_superusers', 'superuser upsert']
 REGENERATE = 'If a migration changed the schema, regenerate references/schema.json: python3 tests/skill.py --binary <pocketcontext> --write-schema'
@@ -216,10 +216,11 @@ def static_checks():
             if path.is_file() and '__pycache__' not in path.parts:
                 text = path.read_text()
                 assert not [word for word in FORBIDDEN if word in text], (path, FORBIDDEN)
-    with item('scripts/dc.py is executable and has no delete command'):
-        script = SKILL / 'scripts' / 'dc.py'
-        assert os.access(script, os.X_OK) and script.read_text().startswith('#!/usr/bin/env python3\n'), script
-        assert "'DELETE'" not in script.read_text() and "add('delete'" not in script.read_text()
+    with item('dealcontext is executable and has no delete command'):
+        script = SKILL / 'dealcontext'
+        assert os.access(script, os.X_OK) and script.read_text().startswith('#!/usr/bin/env -S uv run --script\n'), script
+        source = (ROOT / 'src/dealcontext_client/cli.py').read_text()
+        assert "'DELETE'" not in source and "add('delete'" not in source
 
 
 def sorted_tables(schema):
@@ -294,7 +295,7 @@ def version_checks(dc, tmp, installed, tokens):
             SkillVersion.metadata = {'recommendedRevision': SKILL_REVISION}
             stdout, stderr = dc('check', **options)
             assert stdout.startswith('OK') and stderr == '' and calls() == 4
-            script = installed / 'scripts' / 'dc.py'
+            script = installed / 'dealcontext_client/cli.py'
             original = script.read_text()
             try:
                 assert f'SKILL_REVISION = {SKILL_REVISION}' in original
@@ -361,7 +362,8 @@ def main():
         assert ROOT not in tmp.resolve().parents, 'the temporary directory must be outside the repository'
         installed = tmp / 'installed' / 'dealcontext'
         shutil.copytree(SKILL, installed, ignore=shutil.ignore_patterns('__pycache__'))
-        environment = {'PATH': os.environ.get('PATH', ''), 'HOME': str(tmp / 'home'), 'XDG_CACHE_HOME': str(tmp / 'cache'),
+        shutil.copytree(ROOT / 'src/dealcontext_client', installed / 'dealcontext_client', ignore=shutil.ignore_patterns('__pycache__'))
+        environment = {'PYTHONDONTWRITEBYTECODE': '1', 'PATH': os.environ.get('PATH', ''), 'HOME': str(tmp / 'home'), 'XDG_CACHE_HOME': str(tmp / 'cache'),
                        'DEALCONTEXT_URL': base, 'DEALCONTEXT_AGENT_EMAIL': EMAIL, 'DEALCONTEXT_AGENT_PASSWORD': PASSWORD}
         (tmp / 'home').mkdir()
         (tmp / 'elsewhere').mkdir()
@@ -369,9 +371,9 @@ def main():
         outputs, tokens = [], set()
 
         def dc(*argv, expect=0, stdin=None, **overrides):
-            """Run the copied dc.py from an unrelated directory. Returns (stdout, stderr)."""
+            """Run the copied dealcontext from an unrelated directory. Returns (stdout, stderr)."""
             env = {key: value for key, value in {**environment, **overrides}.items() if value is not None}
-            done = subprocess.run([sys.executable, str(installed / 'scripts' / 'dc.py'), *argv], cwd=tmp / 'elsewhere', env=env, input=stdin, capture_output=True, text=True, timeout=120)
+            done = subprocess.run([sys.executable, str(installed / 'dealcontext'), *argv], cwd=tmp / 'elsewhere', env=env, input=stdin, capture_output=True, text=True, timeout=120)
             outputs.append(done.stdout + done.stderr)
             assert done.returncode == expect, (argv, 'exit code', done.returncode, 'expected', expect, done.stdout, done.stderr)
             assert 'Traceback' not in done.stderr, done.stderr
@@ -393,6 +395,7 @@ def main():
         if args.write_schema:
             target = SKILL / 'references' / 'schema.json'
             target.write_text(schema_text(out('schema')))
+            (ROOT / 'src/dealcontext_client/schema.json').write_text(target.read_text())
             print(f'wrote {target}')
             return
 
@@ -435,7 +438,7 @@ def main():
             committed = json.loads((SKILL / 'references' / 'schema.json').read_text())
             assert committed == sorted_tables(committed), 'references/schema.json is not in the generated form'
         with item('check prints the differences and exits 3 when the reference schema is out of date'):
-            snapshot = installed / 'references' / 'schema.json'
+            snapshot = installed / 'dealcontext_client/schema.json'
             original = snapshot.read_text()
             changed = json.loads(original)
             changed['tables'] = [table for table in changed['tables'] if table['name'] != 'notes'] + [{'name': 'invoices', 'columns': []}]
@@ -587,8 +590,8 @@ def main():
         with item('the password and tokens never appear in stdout or stderr'):
             assert len(tokens) >= 2 and all(len(token) > 15 for token in tokens), len(tokens)  # Logins in the same second return the same token.
             for number, text in enumerate(outputs):
-                assert PASSWORD not in text and not [token for token in tokens if token in text], f'secret in the output of dc.py call number {number}'
-        print('PASS: skill files, links, frontmatter, no operator credentials; dc.py from a copy outside the repository: configuration errors, '
+                assert PASSWORD not in text and not [token for token in tokens if token in text], f'secret in the output of dealcontext call number {number}'
+        print('PASS: skill files, links, frontmatter, no operator credentials; dealcontext from a copy outside the repository: configuration errors, '
               'whoami, token cache mode and reuse, advisory skill revisions and cache isolation, check against the live schema, schema, create, update, get, stamp removal, HTTP errors, '
               'SQL NULL and truncation warning, atomic batch success and failure, recovery from a rejected token, 409 exit code, logout, no secrets in output')
 

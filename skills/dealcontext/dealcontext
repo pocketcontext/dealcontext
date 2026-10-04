@@ -1,0 +1,9 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["dealcontext-client @ git+https://github.com/pocketcontext/dealcontext.git@d5d4291e9c968644ed7680d21c0580d6f32bbceb"]
+# ///
+from dealcontext_client.cli import main
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -23,7 +23,7 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parent.parent
-DC = ROOT / 'skills' / 'dealcontext' / 'scripts' / 'dc.py'
+DC = ROOT / 'skills' / 'dealcontext' / 'dealcontext'
 # CI-only fixture built from pinned official MinIO source; no withdrawn registry dependency.
 MINIO_IMAGE = 'dealcontext-minio-fixture:9e49d5e-7394ce0'
 STOP_LIMIT = 10  # seconds. `docker stop` waits 10 seconds by default before it kills.
@@ -182,7 +182,7 @@ def provision_agent(base, token, email, password):
 
 
 class Client:
-    """The skill's dc.py with its own HOME, so every new Client logs in again."""
+    """The skill's dealcontext with its own HOME, so every new Client logs in again."""
 
     def __init__(self, base, email, password, home):
         self.home = Path(home)
@@ -191,12 +191,12 @@ class Client:
         self.env.pop('XDG_CACHE_HOME', None)
 
     def run(self, *args, stdin=None, status=0):
-        say('    $ dc.py ' + ' '.join(args))
+        say('    $ dealcontext ' + ' '.join(args))
         done = subprocess.run([sys.executable, str(DC), *args], env=self.env, input=stdin, text=True, capture_output=True, timeout=120)
         for token in JWT.findall(''.join(path.read_text(errors='replace') for path in self.home.rglob('*') if path.is_file())):
             secret(token)
         if done.returncode != status:
-            raise Failure(f'dc.py {args[0]} exited with status {done.returncode}, expected {status}.\nstdout: {done.stdout}\nstderr: {done.stderr}')
+            raise Failure(f'dealcontext {args[0]} exited with status {done.returncode}, expected {status}.\nstdout: {done.stdout}\nstderr: {done.stderr}')
         return done.stdout
 
     def sql(self, query):
@@ -210,7 +210,7 @@ def write_batch(client, agent_id):
         {'method': 'POST', 'url': '/api/collections/organizations/records', 'body': {'id': org, 'name': 'Image check organization', 'owner': agent_id}},
         {'method': 'POST', 'url': '/api/collections/notes/records', 'body': {'id': note, 'body': 'Image check note', 'organization': org, 'owner': agent_id}},
     ])))
-    check([entry.get('status') for entry in reply] == [200, 200], 'dc.py batch created an organization and a note in one transaction')
+    check([entry.get('status') for entry in reply] == [200, 200], 'dealcontext batch created an organization and a note in one transaction')
     return org, note
 
 
@@ -288,9 +288,9 @@ def smoke(image, tmp, run_id):
     step('provisioning an agent and running the skill client against the container')
     agent_id = provision_agent(base, token, agent_email, agent_password)
     client = Client(base, agent_email, agent_password, tmp / 'home-smoke')
-    check(json.loads(client.run('whoami'))['id'] == agent_id, 'dc.py whoami logs in and prints the agent id')
+    check(json.loads(client.run('whoami'))['id'] == agent_id, 'dealcontext whoami logs in and prints the agent id')
     client.run('check')
-    check(True, "dc.py check: the image's schema matches the skill's snapshot")
+    check(True, "dealcontext check: the image's schema matches the skill's snapshot")
     org, note = write_batch(client, agent_id)
     check_records(client, org, note)
 

@@ -1,20 +1,20 @@
 # Workflows
 
-Field names and server rules are in [schema.md](schema.md). Requests and `dc.py` commands are in [examples.md](examples.md).
+Field names and server rules are in [schema.md](schema.md). Requests and `dealcontext` commands are in [examples.md](examples.md).
 
 ## Start a pipeline
 
-Create the pipeline with `active: true` and its stages in one batch: choose the pipeline id with `dc.py newid` and use it in each stage's `pipeline`. Always send `position`, numbered 1, 2, 3 in pipeline order; an omitted position is stored as 0 and the second such stage fails the unique index. Choose names and stage probabilities with the user. There are no seeded business records.
+Create the pipeline with `active: true` and its stages in one batch: choose the pipeline id with `dealcontext newid` and use it in each stage's `pipeline`. Always send `position`, numbered 1, 2, 3 in pipeline order; an omitted position is stored as 0 and the second such stage fails the unique index. Choose names and stage probabilities with the user. There are no seeded business records.
 
 ## Create a deal
 
 Find the organization and person by SQL. Resolve ambiguous matches before writing. Reuse existing records. Find the target stage. A deal needs title, stage, owner, currency, and status `open`. Send `value_minor` when the value is known; an omitted value is stored as 0, which reads the same as a zero-value deal. If the user gives no currency, ask; do not guess.
 
-Write the deal and everything that belongs to it in one batch (`POST /api/batch`, or `dc.py batch`): missing contacts first, then the deal, then its first activity if the user requested a follow-up, then a note if there is evidence to record. Choose the id of each new record that a later request refers to: take a 15-character `[a-z0-9]` id from `dc.py newid`, send it as `id` in the create body, and use it in the later relations. A batch holds at most 20 requests and is one transaction: either every record is saved, with one `audit_log` row each, or none is. When a batch fails, the response names the failed request and its error; fix that request and send the whole batch again.
+Write the deal and everything that belongs to it in one batch (`POST /api/batch`, or `dealcontext batch`): missing contacts first, then the deal, then its first activity if the user requested a follow-up, then a note if there is evidence to record. Choose the id of each new record that a later request refers to: take a 15-character `[a-z0-9]` id from `dealcontext newid`, send it as `id` in the create body, and use it in the later relations. A batch holds at most 20 requests and is one transaction: either every record is saved, with one `audit_log` row each, or none is. When a batch fails, the response names the failed request and its error; fix that request and send the whole batch again.
 
 ## Resolve owners and reassign work
 
-Use `dc.py whoami` for your own account ID. Query `agent_directory` for other account IDs and display names; when the user supplies a name, match it with SQL and resolve duplicate matches with the user. Names are labels, not identifiers. To reassign a record, read its current owner and PATCH its `owner` with the chosen account ID. Ownership assigns responsibility without restricting visibility. Agents cannot edit the directory; an operator changes the account name, and the directory updates automatically.
+Use `dealcontext whoami` for your own account ID. Query `agent_directory` for other account IDs and display names; when the user supplies a name, match it with SQL and resolve duplicate matches with the user. Names are labels, not identifiers. To reassign a record, read its current owner and PATCH its `owner` with the chosen account ID. Ownership assigns responsibility without restricting visibility. Agents cannot edit the directory; an operator changes the account name, and the directory updates automatically.
 
 Join owners and `created_by`/`updated_by` to the directory when presenting records. Keep the ID alongside the name where it matters for identification. Use `LEFT JOIN` so a missing name never hides the underlying record; empty stamps and deleted accounts can have no matching name.
 
@@ -62,18 +62,18 @@ Query `audit_log` by `collection` and `record` to see who changed a record and w
 
 ## Retry safely
 
-Read current state after a timeout before retrying writes: the write may have been saved. A client-chosen id makes this check exact, because `get` on that id shows whether the record exists, and a repeated create with the same id is rejected instead of making a duplicate. On HTTP 409 (`dc.py` exit code 4) another request changed the record first: read it again, confirm your change still applies, and retry.
+Read current state after a timeout before retrying writes: the write may have been saved. A client-chosen id makes this check exact, because `get` on that id shows whether the record exists, and a repeated create with the same id is rejected instead of making a duplicate. On HTTP 409 (`dealcontext` exit code 4) another request changed the record first: read it again, confirm your change still applies, and retry.
 
 A batch is atomic, so a failed batch saved nothing and can be sent again after the fix. Several requests outside a batch are not one transaction and can partially succeed. If a deal was created but its activity failed, keep the deal and retry only the missing activity. Tell the user about partial results. Agents cannot delete, so a duplicate created by a blind retry stays until the operator deletes it. Report the duplicate's collection and record ID to the user, and until it is removed mark it so it is not mistaken for live work, for example close a duplicate deal as `lost` with `lost_reason` "duplicate" or complete a duplicate activity.
 
 ## Google sign-in
 
-Set `DEALCONTEXT_URL` and `DEALCONTEXT_AGENT_EMAIL` in the calling environment. A password is unnecessary after Google sign-in. Use Python 3; the client uses only the standard library.
+Set `DEALCONTEXT_URL` and `DEALCONTEXT_AGENT_EMAIL` in the calling environment. A password is unnecessary after Google sign-in. Use the executable uv launcher; it installs its pinned Python package.
 
 ```sh
-python3 scripts/dc.py login --google
-python3 scripts/dc.py whoami
-python3 scripts/dc.py check
+./dealcontext login --google
+./dealcontext whoami
+./dealcontext check
 ```
 
 The user opens the printed private Google URL in their browser. When running the client over SSH, establish `ssh -L 8765:127.0.0.1:8765 user@ssh-host` from the browser's computer first, then run the client in that session. The callback listens only on the SSH host's loopback interface. Google must have `http://127.0.0.1:8765/callback` registered. A different `--port` needs a matching registered URI and forwarding rule.

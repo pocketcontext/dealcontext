@@ -180,7 +180,7 @@ onRecordDeleteExecute((e) => {
 
             with item('skill revision metadata is available only to authenticated agents'):
                 path = '/api/dealcontext/skill-version'
-                client_source = (ROOT / 'skills/dealcontext/scripts/dc.py').read_text()
+                client_source = (ROOT / 'src/dealcontext_client/cli.py').read_text()
                 revision_match = re.search(r'^SKILL_REVISION = ([1-9][0-9]*)$', client_source, re.MULTILINE)
                 assert revision_match, 'bundled client must declare a positive integer SKILL_REVISION'
                 expected_revision = int(revision_match.group(1))

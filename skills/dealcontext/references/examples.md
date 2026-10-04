@@ -1,26 +1,26 @@
 # API examples
 
-Each example is shown as a `dc.py` command and as the HTTP request it sends. `dc.py` is `scripts/dc.py` in this skill; it logs in with the three `DEALCONTEXT_` environment variables and caches the token. The HTTP examples assume `BASE_URL` is the server address and `TOKEN` is a token obtained from `POST /api/collections/agents/auth-with-password` with `{ "identity": "agent@example.com", "password": "..." }`. Never save real credentials in a file. Field names and rules are in [schema.md](schema.md); the order of steps is in [workflows.md](workflows.md).
+Each example is shown as a `dealcontext` command and as the HTTP request it sends. `dealcontext` is `dealcontext` in this skill; it logs in with the three `DEALCONTEXT_` environment variables and caches the token. The HTTP examples assume `BASE_URL` is the server address and `TOKEN` is a token obtained from `POST /api/collections/agents/auth-with-password` with `{ "identity": "agent@example.com", "password": "..." }`. Never save real credentials in a file. Field names and rules are in [schema.md](schema.md); the order of steps is in [workflows.md](workflows.md).
 
 ## Read
 
 Your account ID, for assigning work to yourself:
 
 ```sh
-dc.py whoami
+dealcontext whoami
 ```
 
 Read the schema:
 
 ```sh
-dc.py schema
+dealcontext schema
 curl --fail-with-body "$BASE_URL/api/context/schema" -H "Authorization: $TOKEN"
 ```
 
 List account IDs and display names:
 
 ```sh
-dc.py sql 'SELECT id, name FROM agent_directory ORDER BY name, id LIMIT 100'
+dealcontext sql 'SELECT id, name FROM agent_directory ORDER BY name, id LIMIT 100'
 ```
 
 Find an owner by name before assigning work. Names are not unique; ask the user to choose if several IDs match:
@@ -105,7 +105,7 @@ LIMIT 20
 Run a query. Pass SQL that contains single quotes on standard input. Over HTTP, submit plain SQL in JSON:
 
 ```sh
-dc.py sql - <<'SQL'
+dealcontext sql - <<'SQL'
 SELECT id, title, currency, value_minor FROM deals WHERE status = 'open' LIMIT 50
 SQL
 curl --fail-with-body "$BASE_URL/api/context/query" \
@@ -113,14 +113,14 @@ curl --fail-with-body "$BASE_URL/api/context/query" \
   --data '{"sql":"SELECT id, title, currency, value_minor FROM deals WHERE status = '\''open'\'' LIMIT 50"}'
 ```
 
-The response is `{"columns": [...], "rows": [[...], ...], "truncated": false}`. SQL NULL is JSON `null`; an empty optional field is `""`. When `truncated` is true the rows are incomplete and `dc.py` prints a `WARNING` line on stderr.
+The response is `{"columns": [...], "rows": [[...], ...], "truncated": false}`. SQL NULL is JSON `null`; an empty optional field is `""`. When `truncated` is true the rows are incomplete and `dealcontext` prints a `WARNING` line on stderr.
 
 ## Write one record
 
 Write with the PocketBase records API. Replace the example IDs with IDs read from this workspace:
 
 ```sh
-dc.py create deals '{"title":"Acme renewal","stage":"<stage-id>","organization":"<organization-id>","owner":"<agent-id>","value_minor":250000,"currency":"USD","status":"open"}'
+dealcontext create deals '{"title":"Acme renewal","stage":"<stage-id>","organization":"<organization-id>","owner":"<agent-id>","value_minor":250000,"currency":"USD","status":"open"}'
 ```
 
 ```http
@@ -134,7 +134,7 @@ Content-Type: application/json
 Move a deal to another stage:
 
 ```sh
-dc.py update deals <deal-id> '{"stage":"<negotiation-stage-id>"}'
+dealcontext update deals <deal-id> '{"stage":"<negotiation-stage-id>"}'
 ```
 
 ```http
@@ -148,7 +148,7 @@ Content-Type: application/json
 Add a follow-up to an existing deal:
 
 ```sh
-dc.py create activities '{"subject":"Follow up with Acme","kind":"call","deal":"<deal-id>","owner":"<agent-id>","due_at":"2026-09-25 09:00:00.000Z","done":false}'
+dealcontext create activities '{"subject":"Follow up with Acme","kind":"call","deal":"<deal-id>","owner":"<agent-id>","due_at":"2026-09-25 09:00:00.000Z","done":false}'
 ```
 
 ```http
@@ -162,7 +162,7 @@ Content-Type: application/json
 Close a deal as lost. The server fills `closed_at`:
 
 ```sh
-dc.py update deals <deal-id> '{"status":"lost","lost_reason":"Chose a competitor"}'
+dealcontext update deals <deal-id> '{"status":"lost","lost_reason":"Chose a competitor"}'
 ```
 
 ```http
@@ -176,7 +176,7 @@ Content-Type: application/json
 Reopen it. Both fields must be cleared in the same request:
 
 ```sh
-dc.py update deals <deal-id> '{"status":"open","closed_at":"","lost_reason":""}'
+dealcontext update deals <deal-id> '{"status":"open","closed_at":"","lost_reason":""}'
 ```
 
 ```http
@@ -190,17 +190,17 @@ Content-Type: application/json
 Read one record back:
 
 ```sh
-dc.py get deals <deal-id>
+dealcontext get deals <deal-id>
 curl --fail-with-body "$BASE_URL/api/collections/deals/records/<deal-id>" -H "Authorization: $TOKEN"
 ```
 
 ## Write several records in one batch
 
-A batch is one transaction of at most 20 requests. This one creates a deal, its first activity, and a note. The deal's ID is chosen by the client (`dc.py newid` prints one: 15 characters of `[a-z0-9]`) so that the later requests can refer to it:
+A batch is one transaction of at most 20 requests. This one creates a deal, its first activity, and a note. The deal's ID is chosen by the client (`dealcontext newid` prints one: 15 characters of `[a-z0-9]`) so that the later requests can refer to it:
 
 ```sh
-dc.py newid
-dc.py batch - <<'JSON'
+dealcontext newid
+dealcontext batch - <<'JSON'
 [
   {"method":"POST","url":"/api/collections/deals/records","body":{"id":"<new-deal-id>","title":"Acme renewal","stage":"<stage-id>","organization":"<organization-id>","owner":"<agent-id>","value_minor":250000,"currency":"USD","status":"open"}},
   {"method":"POST","url":"/api/collections/activities/records","body":{"subject":"Follow up with Acme","kind":"call","deal":"<new-deal-id>","owner":"<agent-id>","due_at":"2026-09-25 09:00:00.000Z"}},
@@ -221,7 +221,7 @@ Content-Type: application/json
 
 A successful batch returns HTTP 200 and one `{"status":200,"body":{...record...}}` per request, in request order. Use `"method":"PATCH"` with a record URL to update inside a batch.
 
-If one request fails, the whole batch returns HTTP 400 and nothing is saved, including `audit_log` rows. The failed request's own error is under `data.requests.<index>.response`, and `dc.py` prints `Failed request index <index>` with its message:
+If one request fails, the whole batch returns HTTP 400 and nothing is saved, including `audit_log` rows. The failed request's own error is under `data.requests.<index>.response`, and `dealcontext` prints `Failed request index <index>` with its message:
 
 ```json
 {"status":400,"message":"Batch transaction failed.","data":{"requests":{"1":{"code":"batch_request_failed","message":"Batch request failed.","response":{"status":400,"message":"At least one of deal, person, organization must be set.","data":{}}}}}}
@@ -229,10 +229,10 @@ If one request fails, the whole batch returns HTTP 400 and nothing is saved, inc
 
 ## Triage an enquiry
 
-Qualify an enquiry in one batch: a new person, a deal, a note, and the enquiry itself. Take one id from `dc.py newid` for the person and one for the deal. Leave out the person request and use the existing person id when the query above found one. `name` and `email` are the submitted values, unchanged. Do not paste them into a command or a heredoc: build the JSON with a serializer, save it to a file, and send it with `dc.py batch - < batch.json`. The heredoc below only shows the shape of the requests. The note is written in your own words and names the enquiry instead of copying its text. Send the JSON on standard input with a quoted heredoc, never as a command-line argument:
+Qualify an enquiry in one batch: a new person, a deal, a note, and the enquiry itself. Take one id from `dealcontext newid` for the person and one for the deal. Leave out the person request and use the existing person id when the query above found one. `name` and `email` are the submitted values, unchanged. Do not paste them into a command or a heredoc: build the JSON with a serializer, save it to a file, and send it with `dealcontext batch - < batch.json`. The heredoc below only shows the shape of the requests. The note is written in your own words and names the enquiry instead of copying its text. Send the JSON on standard input with a quoted heredoc, never as a command-line argument:
 
 ```sh
-dc.py batch - <<'JSON'
+dealcontext batch - <<'JSON'
 [
   {"method":"POST","url":"/api/collections/people/records","body":{"id":"<new-person-id>","name":"Ada Example","email":"ada@example.com","owner":"<agent-id>"}},
   {"method":"POST","url":"/api/collections/deals/records","body":{"id":"<new-deal-id>","title":"Ada Example: web form enquiry","stage":"<stage-id>","person":"<new-person-id>","owner":"<agent-id>","currency":"USD","status":"open"}},
@@ -245,7 +245,7 @@ JSON
 Over HTTP the same array is the value of `requests` in `POST /api/batch`. `qualified` needs `person`; `deal` is optional. Reject an enquiry or mark it as spam with a single update:
 
 ```sh
-dc.py update enquiries <enquiry-id> '{"status":"spam"}'
+dealcontext update enquiries <enquiry-id> '{"status":"spam"}'
 ```
 
 ```http
@@ -260,6 +260,6 @@ A body that names `name`, `email`, `details`, `source`, or a `utm_` column is re
 
 ## Notes
 
-Do not send `created_by` or `updated_by`, and do not send DELETE requests; agents cannot delete records. `dc.py create` and `dc.py update` remove the two fields from the body and say so on stderr.
+Do not send `created_by` or `updated_by`, and do not send DELETE requests; agents cannot delete records. `dealcontext create` and `dealcontext update` remove the two fields from the body and say so on stderr.
 
 Use HTTP clients that encode JSON correctly. For SQL literals, use a trusted SQL literal encoder rather than interpolating raw user text. Check the response's truncation indicator and use ordered pagination when needed.

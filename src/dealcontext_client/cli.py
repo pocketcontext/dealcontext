@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Command-line client for a DealContext CRM server. Python 3 standard library only.
+"""Command-line client for a DealContext CRM server. Packaged Python CLI.
 
 Configuration comes from three environment variables:
   DEALCONTEXT_URL             server address, for example https://crm.example.com
@@ -17,6 +17,8 @@ import http.server
 import json
 import os
 from pathlib import Path
+from importlib.resources import files
+from observecontext_client.instrumentation import instrument_cli
 import secrets
 import sys
 import tempfile
@@ -26,7 +28,7 @@ import urllib.parse
 import urllib.request
 
 ENV = ['DEALCONTEXT_URL', 'DEALCONTEXT_AGENT_EMAIL', 'DEALCONTEXT_AGENT_PASSWORD']
-SCHEMA_FILE = Path(__file__).resolve().parent.parent / 'references' / 'schema.json'
+SCHEMA_FILE = files('dealcontext_client').joinpath('schema.json')
 STAMPS = ('created_by', 'updated_by')
 ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 TIMEOUT = 30
@@ -144,7 +146,7 @@ def send(cfg, method, path, body=None, token=None, timeout=TIMEOUT):
 
 def login(cfg):
     if not cfg.get('password'):
-        raise Fail(2, 'Set DEALCONTEXT_AGENT_PASSWORD for password login, or run dc.py login --google for browser sign-in.')
+        raise Fail(2, 'Set DEALCONTEXT_AGENT_PASSWORD for password login, or run dealcontext login --google for browser sign-in.')
     status, data = send(cfg, 'POST', '/api/collections/agents/auth-with-password', {'identity': cfg['email'], 'password': cfg['password']})
     if status != 200 or not isinstance(data, dict) or 'token' not in data:
         raise Fail(1, f'login as {cfg["email"]} failed: HTTP {status}\n{dump(data)}\nCheck the three DEALCONTEXT_ variables with the user. User credentials only.')
@@ -228,7 +230,7 @@ def google_login(cfg, port=8765, timeout=180):
             if not valid:
                 status, message = 400, 'Invalid sign-in callback. Return to your terminal.'
             elif 'error' in values:
-                outcome['error'] = 'Google sign-in was denied or cancelled; run dc.py login --google to retry.'
+                outcome['error'] = 'Google sign-in was denied or cancelled; run dealcontext login --google to retry.'
                 status, message = 400, 'Sign-in was cancelled. Return to your terminal.'
             elif len(code) != 1 or not code[0]:
                 outcome['error'] = 'Google returned an invalid sign-in callback.'
@@ -264,7 +266,7 @@ def google_login(cfg, port=8765, timeout=180):
         while not outcome and time.monotonic() < deadline:
             server.handle_request()
     if not outcome:
-        raise Fail(1, 'Google sign-in timed out; run dc.py login --google to retry.')
+        raise Fail(1, 'Google sign-in timed out; run dealcontext login --google to retry.')
     if 'error' in outcome:
         raise Fail(1, outcome['error'])
     status, data = oauth_send(cfg, 'POST', '/api/collections/agents/auth-with-oauth2', {
@@ -294,14 +296,14 @@ def call(cfg, method, path, body=None):
         # Renew at most every five minutes, or near expiry, to respect auth rate limits.
         status, data = oauth_send(cfg, 'POST', '/api/collections/agents/auth-refresh', token=session['token'])
         if status != 200:
-            raise Fail(1, f'Google session could not be refreshed (HTTP {status}); run dc.py login --google again.')
+            raise Fail(1, f'Google session could not be refreshed (HTTP {status}); run dealcontext login --google again.')
         session = auth_session(cfg, data, 'google')
         if path == '/api/collections/agents/auth-refresh':
             return status, data
     status, data = send(cfg, method, path, body, session['token'])
     if cached and 400 <= status < 500 and status != 409 and (status == 401 or token_rejected(cfg, session['token'])):
         if session.get('method') == 'google':
-            raise Fail(1, 'Google session was rejected; run dc.py login --google again.')
+            raise Fail(1, 'Google session was rejected; run dealcontext login --google again.')
         session = login(cfg)
         status, data = send(cfg, method, path, body, session['token'])
     return status, data
@@ -374,7 +376,7 @@ def skill_advisory(cfg, force=False):
                 status, data = 0, None
             if status == 401 and attempt == 0:
                 if session.get('method') == 'google':
-                    raise Fail(1, 'Google session was rejected; run dc.py login --google again.')
+                    raise Fail(1, 'Google session was rejected; run dealcontext login --google again.')
                 session = login(cfg)
                 continue
             break
@@ -388,7 +390,7 @@ def skill_advisory(cfg, force=False):
             except OSError:
                 pass
             say('WARNING: could not verify the recommended DealContext skill revision. '
-                'Continuing; run `dc.py check` to retry.')
+                'Continuing; run `dealcontext check` to retry.')
             return
         cached = {'installedRevision': SKILL_REVISION, 'recommendedRevision': recommended, 'checkedAt': time.time()}
         # A separate atomic cache keeps advisory data out of the token cache and
@@ -474,7 +476,7 @@ def check(cfg):
         return 0
     for line in differences:
         say(line, sys.stdout)
-    say('The server is authoritative: run `dc.py schema` and follow the server\'s error messages where the reference files disagree. '
+    say('The server is authoritative: run `dealcontext schema` and follow the server\'s error messages where the reference files disagree. '
         'Ask the user to update this skill.', sys.stdout)
     return 3
 
@@ -535,7 +537,7 @@ def run(args):
 def parse(argv):
     pretty = argparse.ArgumentParser(add_help=False)
     pretty.add_argument('--pretty', action='store_true', default=argparse.SUPPRESS, help='indent the JSON output')
-    parser = argparse.ArgumentParser(prog='dc.py', parents=[pretty], description='DealContext CRM client. Reads with SQL, writes through the records API. There is no delete command: agents cannot delete records.',
+    parser = argparse.ArgumentParser(prog='dealcontext', parents=[pretty], description='DealContext CRM client. Reads with SQL, writes through the records API. There is no delete command: agents cannot delete records.',
                                      epilog='Environment: ' + ', '.join(ENV) + '. JSON arguments may be "-" to read standard input. Exit codes: 0 ok, 1 HTTP or transport error, 2 usage or configuration, 3 check found differences, 4 HTTP 409.')
     commands = parser.add_subparsers(dest='command', required=True, metavar='command')
     def add(name, text, *arguments):
@@ -563,14 +565,15 @@ def parse(argv):
 
 def main():
     try:
-        return run(parse(sys.argv[1:]))
+        with instrument_cli(service='dealcontext.client', opener=opener):
+            return run(parse(sys.argv[1:]))
     except Fail as error:
-        say(f'dc.py: {error}')
+        say(f'dealcontext: {error}')
         return error.code
     except KeyboardInterrupt:
         return 130
     except Exception as error:  # No traceback: keep the output short and free of request data.
-        say(f'dc.py: unexpected {type(error).__name__}: {error}')
+        say(f'dealcontext: unexpected {type(error).__name__}: {error}')
         return 1
 
 
