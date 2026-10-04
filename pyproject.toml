@@ -7,7 +7,7 @@ name = "dealcontext-client"
 version = "0.1.0"
 description = "Portable dealcontext command-line client"
 requires-python = ">=3.11"
-dependencies = ["observecontext-client @ git+https://github.com/pocketcontext/observecontext.git@49cf708640b6275a5e89107d097b2a1ce2d262fa"]
+dependencies = ["observecontext-client @ git+https://github.com/pocketcontext/observecontext.git@d10e84bb30ce607c03c62c03a4fdfd596d32ab27"]
 
 [project.scripts]
 dealcontext = "dealcontext_client.cli:main"
