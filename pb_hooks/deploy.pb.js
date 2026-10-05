@@ -8,6 +8,8 @@ routerAdd("GET", "/up", (e) => require(`${__hooks}/deploy.js`).up(e), $apis.skip
 // Runs for every command (serve, superuser, migrate) after the database is open and the settings are loaded.
 onBootstrap((e) => {
   e.next();
+  // Frozen startup preserves existing settings and authentication identities.
+  if (e.app.store().get("pocketcontextMaintenanceReadOnly") === true) return;
   require(`${__hooks}/deploy.js`).settings(e.app);
   require(`${__hooks}/deploy.js`).googleOAuth(e.app);
 });

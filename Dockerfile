@@ -64,7 +64,7 @@ RUN go build -trimpath -tags sqlite_math_functions -ldflags '-s -w' -o /out/pock
 
 FROM debian:trixie-20260918-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates tini \
+    && apt-get install -y --no-install-recommends ca-certificates tini python3 \
     && rm -rf /var/lib/apt/lists/* \
     && test -x /usr/bin/tini
 

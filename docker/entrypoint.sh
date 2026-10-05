@@ -33,6 +33,15 @@ app_flags() {
 }
 
 serve() {
+	if [ "${LITESTREAM_DISABLED:-}" != true ]; then
+		# The daemon creates its control socket before launching this child. Force
+		# its first database sync before accepting traffic: an uninitialized
+		# Litestream database can otherwise skip final sync on a fast shutdown.
+		log "waiting for initial database and replica synchronization"
+		if ! litestream sync -wait -timeout 30 -socket /var/run/litestream.sock "$DB_PATH" >/dev/null 2>&1; then
+			die "initial Litestream synchronization failed; refusing to serve"
+		fi
+	fi
 	# The server needs neither the replica credentials nor the superuser password.
 	# Litestream copies its credentials into AWS_* for its own use; drop those as well.
 	unset LITESTREAM_ACCESS_KEY_ID LITESTREAM_SECRET_ACCESS_KEY \
@@ -78,6 +87,44 @@ if [ -n "${DEALCONTEXT_GOOGLE_CLIENT_ID:-}" ] || [ -n "${DEALCONTEXT_GOOGLE_CLIE
 		die "DEALCONTEXT_GOOGLE_CLIENT_ID and DEALCONTEXT_GOOGLE_CLIENT_SECRET must be set together"
 fi
 
+# Read only the shared maintenance contract, never application settings or secrets.
+# Malformed state stops startup rather than accidentally reopening a frozen app.
+if ! frozen=$(python3 - "$DATA_DIR/maintenance.json" <<'PY'
+import json
+import os
+from pathlib import Path
+import stat
+import sys
+
+path = Path(sys.argv[1])
+try:
+    try:
+        info = os.lstat(path)
+    except FileNotFoundError:
+        info = None
+    if info is None:
+        print('false')
+    else:
+        if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077 or info.st_size > 4096:
+            raise ValueError('maintenance state must be a private regular file')
+        state = json.loads(path.read_text())
+        if (not isinstance(state, dict) or set(state) != {'readOnly', 'generation'}
+                or type(state.get('readOnly')) is not bool
+                or type(state.get('generation')) is not int
+                or not 0 <= state['generation'] <= 18446744073709551615):
+            raise ValueError('invalid maintenance state')
+        print('true' if state['readOnly'] else 'false')
+except Exception:
+    sys.exit(1)
+PY
+); then
+	die "invalid maintenance state; startup stopped"
+fi
+if [ "$frozen" = true ]; then
+	[ -f "$DB_PATH" ] || die "frozen startup requires the existing database"
+	log "read-only maintenance state: preserving the existing database and credentials"
+fi
+
 replicate=true
 if [ "${LITESTREAM_DISABLED:-}" = true ]; then
 	replicate=false
@@ -98,7 +145,7 @@ else
 	export LITESTREAM_REGION LITESTREAM_ENDPOINT LITESTREAM_SYNC_INTERVAL
 fi
 
-if [ "$replicate" = true ]; then
+if [ "$replicate" = true ] && [ "$frozen" != true ]; then
 	if [ -f "$DB_PATH" ]; then
 		log "database exists in the volume: no restore"
 	else
@@ -118,7 +165,9 @@ if [ "$replicate" = true ]; then
 	fi
 fi
 
-if [ -n "${DEALCONTEXT_SUPERUSER_EMAIL:-}" ] && [ -n "${DEALCONTEXT_SUPERUSER_PASSWORD:-}" ]; then
+if [ "$frozen" = true ]; then
+	log "read-only maintenance state: skipping superuser provisioning"
+elif [ -n "${DEALCONTEXT_SUPERUSER_EMAIL:-}" ] && [ -n "${DEALCONTEXT_SUPERUSER_PASSWORD:-}" ]; then
 	log "upserting the superuser from DEALCONTEXT_SUPERUSER_EMAIL"
 	# shellcheck disable=SC2046 # see serve
 	if ! "$SERVER" superuser upsert $(app_flags) -- "$DEALCONTEXT_SUPERUSER_EMAIL" "$DEALCONTEXT_SUPERUSER_PASSWORD"; then
@@ -131,6 +180,14 @@ elif [ -n "${DEALCONTEXT_SUPERUSER_PASSWORD:-}" ]; then
 fi
 
 if [ "$replicate" = true ]; then
+	# A fresh instance without startup superuser credentials still needs a database
+	# for the child's synchronous replica readiness check. These are the same
+	# application migrations normally applied by serve.
+	if [ ! -f "$DB_PATH" ]; then
+		log "initializing application database before replication"
+		# shellcheck disable=SC2046
+		"$SERVER" migrate up $(app_flags) || die "database initialization failed"
+	fi
 	log "starting Litestream, which starts and supervises the server"
 	exec litestream replicate -config "$LITESTREAM_CONFIG_FILE" -exec "$SELF serve"
 fi

@@ -42,6 +42,13 @@ jobs:
           # The scope of the amd64 publication build below, so that build starts from this cache.
           cache-from: type=gha,scope=amd
           cache-to: type=gha,mode=max,scope=amd
+      - name: Verify maintenance using the built server
+        run: |
+          python3 tests/maintenance_entrypoint.py
+          container=$(docker create dealcontext:ci)
+          trap 'docker rm "$container" >/dev/null' EXIT
+          docker cp "$container:/usr/local/bin/pocketcontext" "$RUNNER_TEMP/maintenance-server"
+          python3 tests/maintenance.py --binary "$RUNNER_TEMP/maintenance-server"
       - name: Show the image
         run: |
           docker image inspect dealcontext:ci --format '{{json .Config}}' | python3 -m json.tool

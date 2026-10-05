@@ -76,3 +76,8 @@ jobs:
           pnpm e2e
           cd ../..
           python3 dealcontext/tests/reader.py --binary pocketcontext/bin/pocketcontext --browser
+
+      - name: Maintenance freeze and frozen startup
+        run: |
+          python3 dealcontext/tests/maintenance_entrypoint.py
+          python3 dealcontext/tests/maintenance.py --binary pocketcontext/bin/pocketcontext

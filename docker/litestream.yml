@@ -3,6 +3,12 @@
 # this file. The credentials are not written here: Litestream reads LITESTREAM_ACCESS_KEY_ID
 # and LITESTREAM_SECRET_ACCESS_KEY from the environment itself.
 # A custom endpoint (R2, MinIO) selects path-style addressing automatically.
+# Private local readiness handshake, never exposed over HTTP.
+socket:
+  enabled: true
+  path: /var/run/litestream.sock
+  permissions: 0600
+
 dbs:
   - path: /storage/pb_data/data.db
     replica:
