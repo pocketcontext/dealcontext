@@ -76,7 +76,7 @@ Set `DEALCONTEXT_URL` and `DEALCONTEXT_AGENT_EMAIL` in the calling environment. 
 ./dealcontext check
 ```
 
-The user opens the printed private Google URL in their browser. When running the client over SSH, establish `ssh -L 8765:127.0.0.1:8765 user@ssh-host` from the browser's computer first, then run the client in that session. The callback listens only on the SSH host's loopback interface. Google must have `http://127.0.0.1:8765/callback` registered. A different `--port` needs a matching registered URI and forwarding rule.
+Open the printed private Google authorization URL in the user's browser and let the user complete any account selection, authentication, or consent. Process one application login at a time: wait for login to finish and verify completion with `./dealcontext whoami` before starting another application's login. When running the client over SSH, establish `ssh -L 8765:127.0.0.1:8765 user@ssh-host` from the browser's computer first, then run the client in that session. The callback listens only on the SSH host's loopback interface. Google must have `http://127.0.0.1:8765/callback` registered. A different `--port` needs a matching registered URI and forwarding rule.
 
 Workspace JIT creates an eligible account on first login and immediately grants shared CRM access. Existing accounts retain their IDs and attribution. Accounts outside the configured Google Workspace and disabled accounts cannot log in; ask the operator to resolve access instead of trying another identity.
 

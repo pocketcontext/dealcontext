@@ -17,7 +17,7 @@ The client reads these environment variables:
 - `DEALCONTEXT_AGENT_EMAIL`: email of your account in the `agents` collection
 - `DEALCONTEXT_AGENT_PASSWORD`: optional password for password authentication
 
-The URL and email must already be set in the environment your commands run in; do not set them inline in a command. If one is missing, the client exits with code 2 and names it. Stop and tell the user which variable to set. Do not search files for credentials. Never ask for, look for, or use superuser (operator) credentials; CRM work needs only the agent account. Never put the password or a token in a command line, a file, or your reply. For Google authentication, run `./dealcontext login --google` and let the user complete browser sign-in. Never open the authorization URL on their behalf. Workspace JIT may create the account on first login; disabled accounts require an operator to restore access. For an SSH session, see `references/workflows.md`, "Google sign-in". The client logs in when needed and caches the token in `~/.cache/dealcontext/` with mode 0600.
+The URL and email must already be set in the environment your commands run in; do not set them inline in a command. If one is missing, the client exits with code 2 and names it. Stop and tell the user which variable to set. Do not search files for credentials. Never ask for, look for, or use superuser (operator) credentials; CRM work needs only the agent account. Never put the password or a token in a command line, a file, or your reply. For Google authentication, run `./dealcontext login --google` and open the printed authorization URL in the user's browser. Let the user complete any account selection, authentication, or consent. Process one application login at a time: wait for login to finish and verify completion with `./dealcontext whoami` before starting another application's login. Workspace JIT may create the account on first login; disabled accounts require an operator to restore access. For an SSH session, see `references/workflows.md`, "Google sign-in". The client logs in when needed and caches the token in `~/.cache/dealcontext/` with mode 0600.
 
 Start a session with:
 
@@ -85,7 +85,7 @@ JSON
 - Exit code 4 (HTTP 409): another request changed the record first. Read the record again, confirm your change still applies, then retry.
 - Timeout or transport error on a write: the write may have been saved. Read the current state before retrying, or you create a duplicate that you cannot delete.
 - HTTP 403 on a write: agents cannot delete or provision accounts. Do not look for another way around it.
-- A login failure can mean incorrect credentials, an expired Google session, a disabled account, or a Workspace eligibility failure. Tell the user; do not try other credentials. If requested by the client, have the user run `dealcontext login --google` again.
+- A login failure can mean incorrect credentials, an expired Google session, a disabled account, or a Workspace eligibility failure. Tell the user; do not try other credentials. If requested by the client, repeat the Google login workflow above.
 
 ## References
 
