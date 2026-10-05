@@ -207,7 +207,9 @@ def main():
             assert source.count('SERVER=/usr/local/bin/pocketcontext\n') == 1
             script.write_text(source.replace('SERVER=/usr/local/bin/pocketcontext\n', f'SERVER={stub}\n'))
             subprocess.run(['sh', '-n', str(ROOT / 'docker' / 'entrypoint.sh')], check=True)
-            done = subprocess.run(['sh', str(script), 'serve'], env={**clean, **env}, check=True, capture_output=True, text=True)
+            # This fixture checks origins only; it has no running replica daemon.
+            # Real IPC readiness remains covered by maintenance/container tests.
+            done = subprocess.run(['sh', str(script), 'serve'], env={**clean, 'LITESTREAM_DISABLED': 'true', **env}, check=True, capture_output=True, text=True)
             flags = [line for line in done.stdout.splitlines() if line.startswith('--origins')]
             assert len(flags) <= 1 and '--http=0.0.0.0:80' in done.stdout.splitlines(), done.stdout
             return flags[0] if flags else None
