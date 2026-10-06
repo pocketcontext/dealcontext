@@ -1,5 +1,7 @@
 # DealContext
 
+Current release controls and platform coverage: [common CI and deployment contract](docs/ci-and-deployment.md).
+
 A sales CRM operated through a coding agent. Contacts, pipelines, deals, activities, messages, and notes live in PocketBase. Agents read context with SQL and write records through the normal PocketBase REST API. An authenticated read-only CRM reader is available at `/`. A website can post its contact form to a [public enquiry endpoint](#public-enquiry-form); agents triage what arrives.
 
 [PocketContext](https://github.com/pocketcontext/pocketcontext) supplies the server and restricted SQL endpoints. This repository supplies the CRM schema, configuration, workflow tests, and an installable agent skill in [skills/dealcontext](skills/dealcontext/SKILL.md) that holds the agent instructions and a small command-line client.
@@ -321,22 +323,14 @@ Trusted proxy header: PocketBase uses it for the client address in the rate limi
 
 Superuser and dashboard: the PocketBase dashboard at `/_/` is reachable on the public host. It is protected by the superuser login and by the `*:auth` rate limit; no second factor is configured. Use a long random password. Because the entrypoint upserts the superuser on every start, a password changed in the dashboard lasts until the next start: change the Colors parameter instead. When the two variables are not set and the database has no superuser, PocketBase prints a one-time installation link with a token to the container log.
 
-Continuous deployment: `colors.yml` names `github: pocketcontext/dealcontext`, so `create` publishes `SSH_PRIVATE_KEY`, `SERVER_IP`, `SERVER_USER`, and `SSH_KNOWN_HOSTS` to the GitHub environment named after the profile. The `deploy` job reads the environment name from the repository variable `COLORS_PROFILE` and is skipped while that variable is empty. After `create` has run once, install the CRM-specific hook on the ONCE server before enabling deployment:
-
-```sh
-# From a trusted checkout copied to the ONCE server:
-sudo python3 deploy/install.py
-# Perform one controlled update, persisting auto-update=false:
-sudo /usr/local/sbin/deploy-dealcontext
-# Then enable the GitHub deploy job:
-gh variable set COLORS_PROFILE --repo pocketcontext/dealcontext --body once-pocketcontext
-```
-
-The production environment is `once-pocketcontext`. The job opens an SSH connection and sends no command. The deploy key's forced command runs the root-owned `/usr/local/sbin/deploy-dealcontext` wrapper. It locks deployments, pre-pulls the fixed CRM image, gracefully stops the exact CRM container with a 60-second timeout, and runs `once update crm.pocketcontext.com --auto-update=false`. A failed update restarts the captured old container only when it is still the sole CRM container; ambiguous recovery fails for operator inspection. Pull failures leave the running service untouched, and a forced stop prevents an update. Deployments briefly interrupt CRM availability.
-
-The installer preserves other applications' keys and restrictions and grants sudo only for the fixed wrapper without arguments. Re-run it after Colors provisioning rewrites deployment keys.
-
-After SSH succeeds, the workflow retries `https://crm.pocketcontext.com/up` for up to three minutes and fails if the public database-backed health endpoint remains unavailable. Main-branch runs and deployment jobs are serialized without cancelling an active deployment. The health check verifies availability; it does not attest which image revision is serving.
+Continuous deployment uses the main-only `once-v2` GitHub environment and the
+maintained `once-pocketcontext-v2` shared stop-first dispatcher. Set
+`CONTEXT_DEPLOY_PAUSED=true` to pause deployment without disabling publication.
+The app-local installer and update wrapper are retired and refuse execution.
+The shared dispatcher resolves an immutable image, stops the sole writer with a
+300-second graceful timeout, and preserves its volume. It has no automatic rollback.
+See the [common CI and deployment contract](docs/ci-and-deployment.md) for gates,
+restricted SSH, stale-release checks and post-deployment verification limits.
 
 ### Restore drill
 

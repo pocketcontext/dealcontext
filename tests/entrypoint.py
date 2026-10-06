@@ -114,6 +114,24 @@ class RuntimeTests(unittest.TestCase):
         with self.assertRaises(runtime.StartupError):
             runtime.verify_frozen_storage(self.data)
 
+    def test_database_path_override_rejected_before_writes_or_replica_sync(self):
+        # A second data path would disagree with the fixed Litestream configuration.
+        fresh = self.data / 'must-not-be-created'
+        for path in ('', '/tmp/other-database', 'relative', '/storage/pb_data/../other'):
+            with self.subTest(path=path), patch.dict(os.environ, {'DEALCONTEXT_DATA_DIR': path}), patch.object(runtime, 'run_command') as command, patch.object(runtime, 'restore_database') as restore:
+                for initialize in (False, True):
+                    with self.assertRaises(runtime.StartupError):
+                        runtime.prepare(fresh, initialize=initialize)
+                with self.assertRaises(runtime.StartupError):
+                    runtime.serve()
+                command.assert_not_called()
+                restore.assert_not_called()
+                self.assertFalse(fresh.exists())
+        with patch.dict(os.environ, {'DEALCONTEXT_DATA_DIR': '/storage/pb_data'}):
+            runtime.validate_config()
+        config = (Path(__file__).resolve().parents[1] / 'docker/litestream.yml').read_text()
+        self.assertIn('path: ' + str(runtime.DATA / 'data.db'), config)
+
     def test_configuration_requires_complete_storage_and_replica(self):
         runtime.validate_config()
         for name in ENV:
