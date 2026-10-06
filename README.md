@@ -233,9 +233,21 @@ Use the public host of the deployed server and add the website's origin to `DEAL
 
 ## Deploy with ONCE
 
-The `Dockerfile` builds an image for [Basecamp ONCE](https://github.com/basecamp/once): HTTP on port 80, `GET /up` for the health check, and all state in the `/storage` volume (`/storage/pb_data`). The build stage compiles PocketContext at the commit in `POCKETCONTEXT_VERSION`. The runtime stage adds `pb_migrations/`, `pb_hooks/`, `pocketcontext.json`, and Litestream 0.5.17. `tini` is PID 1 and runs `docker/entrypoint.sh`, which restores the database when the volume is empty, upserts the superuser, and starts Litestream; Litestream starts the server, forwards the stop signal to it, and makes a final sync after the server has exited. The container runs as root, because ONCE creates and mounts `/storage` and offers no option to set its owner or the container's user.
+The `Dockerfile` builds an image for [Basecamp ONCE](https://github.com/basecamp/once): HTTP on port 80, `GET /up` for the health check, SQLite state in `/storage/pb_data`, and primary files in a separate private S3 bucket. The build stage compiles PocketContext at the commit in `POCKETCONTEXT_VERSION`. The runtime stage adds `pb_migrations/`, `pb_hooks/`, `pocketcontext.json`, and Litestream 0.5.17. `tini` is PID 1 and runs `docker/entrypoint.py`, which restores the database when the volume is empty, upserts the superuser, and starts Litestream; Litestream starts the server, forwards the stop signal to it, and makes a final sync after the server has exited. The container runs as root, because ONCE creates and mounts `/storage` and offers no option to set its owner or the container's user.
 
 The workflow `.github/workflows/image.yml` builds and checks the image on every push and pull request. On `main` it also publishes `ghcr.io/pocketcontext/dealcontext:latest` and `:sha-<short commit>` for `linux/amd64` and `linux/arm64`, then pings the server. ONCE has no registry login, so the package must be public. The first publication from this public repository created it as public: `ghcr.io/pocketcontext/dealcontext:latest` can be pulled without credentials. The image holds the server binary, migrations, hooks, and configuration, and no credentials. Check the package settings on GitHub if a pull on the server is refused.
+
+Normal container startup requires an existing database or a recoverable replica.
+For a new installation only, run the same image and private environment with
+`init` on its empty `/storage` volume, then start normally. `init` refuses an
+existing replica or local state; a failed initialization leaves a durable blocker.
+Never use it to bypass an unavailable replica. Missing replicas fail normal startup.
+Recovery stages `data.db` privately, checks SQLite and downloads every file reference
+from the actual collection schema (including authentication avatars), then fsyncs
+and installs the database. These downloads establish existence and readability;
+without an authoritative stored digest they do not establish byte integrity.
+Retain both storage histories and a single writer. Frozen recovery additionally
+requires the separately preserved `maintenance.json` and `auxiliary.db`.
 
 ### Variables
 
@@ -249,12 +261,12 @@ ONCE injects `BASE_URL`, `SMTP_ADDRESS`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PAS
 | `DEALCONTEXT_TRUSTED_PROXY_HEADER` | Header that holds the client address, see below. Unset: the stored setting is left alone. |
 | `DEALCONTEXT_RATE_LIMITS` | `true` enables the rate limits, `false` disables them. The image sets `true`. |
 | `DEALCONTEXT_INTAKE_ORIGINS` | Comma-separated browser origins that may post the [public enquiry form](#public-enquiry-form), for example `https://pocketcontext.com`. Added to `BASE_URL` in the CORS origins. Unset: only `BASE_URL`. |
-| `DEALCONTEXT_S3_BUCKET`, `DEALCONTEXT_S3_ENDPOINT`, `DEALCONTEXT_S3_REGION`, `DEALCONTEXT_S3_ACCESS_KEY_ID`, `DEALCONTEXT_S3_SECRET_ACCESS_KEY` | Optional complete primary file storage configuration; dedicated private bucket and credentials separate from replicas. Does not migrate existing files. |
+| `DEALCONTEXT_S3_BUCKET`, `DEALCONTEXT_S3_ENDPOINT`, `DEALCONTEXT_S3_REGION`, `DEALCONTEXT_S3_ACCESS_KEY_ID`, `DEALCONTEXT_S3_SECRET_ACCESS_KEY` | Required complete container primary file storage configuration; dedicated private bucket and credentials separate from replicas. Does not migrate existing files. |
 | `DEALCONTEXT_S3_FORCE_PATH_STYLE` | Optional `true` (default) or `false`; requires complete primary storage configuration. |
 | `LITESTREAM_BUCKET`, `LITESTREAM_PATH`, `LITESTREAM_ACCESS_KEY_ID`, `LITESTREAM_SECRET_ACCESS_KEY` | Required. The S3 replica of `/storage/pb_data/data.db`. A missing one is a startup error that names it. |
 | `LITESTREAM_REGION`, `LITESTREAM_ENDPOINT` | Region and, for a service other than AWS S3, the endpoint URL. |
 | `LITESTREAM_SYNC_INTERVAL` | Default `10s`. |
-| `LITESTREAM_DISABLED` | Exactly `true` runs the server without Litestream. Then no replication variable is required, and the volume is the only copy. |
+| `LITESTREAM_DISABLED` | Unsupported; any nonempty value stops container startup. |
 
 The rate limits, per client address: `*:auth` 10 requests per 60 seconds, `/api/intake/` 5 per 60 seconds, `/api/batch` 10 per 10 seconds, `/api/context/` 60 per 10 seconds, `/api/` 300 per 10 seconds. `/up` matches no rule.
 
@@ -286,7 +298,6 @@ once:
         LITESTREAM_SYNC_INTERVAL: app-dealcontext-litestream-sync-interval
         DEALCONTEXT_RATE_LIMITS: app-dealcontext-rate-limits
         DEALCONTEXT_INTAKE_ORIGINS: app-dealcontext-intake-origins
-        LITESTREAM_DISABLED: app-dealcontext-litestream-disabled
 ```
 
 ```sh
@@ -461,7 +472,7 @@ During freeze, the advisory `/api/dealcontext/skill-version` endpoint also retur
 503; clients may warn about version checking while authenticated SQL reads remain available.
 
 Replicated startup waits for Litestream’s private IPC synchronization before serving.
-A fresh writable instance initializes its database first; a frozen instance still
+An explicit `init` initializes a new writable instance first; a frozen instance still
 requires its existing database. Failed synchronization stops startup. This ensures
 Litestream initializes before a quick clean shutdown; replication remains asynchronous.
 
@@ -488,7 +499,7 @@ SQLite recovery retains the existing Litestream restore and initial-sync startup
 contract. File storage and SQLite have no shared transaction, and unexpected host
 loss can lose database commits not yet replicated. Keep one writer and replica
 publisher per replica path; preserve the source volume through verified recovery.
-With no S3 configuration and no stored remote backend, local storage is unchanged.
+Direct development server commands retain local storage when no remote backend is configured. The production container requires S3 and replication.
 No deployed application is switched by this preparation.
 
 Validate startup configuration using synthetic isolated databases:

@@ -116,6 +116,7 @@ def main():
                 'LITESTREAM_ACCESS_KEY_ID': keys['replica'][0], 'LITESTREAM_SECRET_ACCESS_KEY': keys['replica'][1],
                 'LITESTREAM_SYNC_INTERVAL': '1h'})
             first, second = run + '-a', run + '-b'
+            s.init_app(args.image, first, env, run)
             s.run_app(args.image, first, first, env, run); base = s.wait_up(first)
             admin = s.superuser_token(base, env[prefix + '_SUPERUSER_EMAIL'], env[prefix + '_SUPERUSER_PASSWORD'])
             def api(method, path, body=None, token=admin):
@@ -184,7 +185,7 @@ def main():
                 'cp -p /source/pb_data/maintenance.json /restored/pb_data/maintenance.json')
             s.check(True, 'entire database recovered after one-hour interval clean shutdown; frozen marker preserved')
             s.docker('rm', first); s.docker('volume', 'rm', first); s.volumes.remove(first)
-            s.run_app(args.image, second, second, env, run); s.volumes.remove(second); base = s.wait_up(second)
+            s.run_app(args.image, second, second, env, run); base = s.wait_up(second)
             assert api('GET', '/api/context/maintenance')['state'] == 'read_only'
             verify()
             status, _, _ = s.http('POST', base + '/api/collections/synthetic_storage/records', {'owner':users[0][0]}, users[0][1])
@@ -205,7 +206,7 @@ def main():
             api('GET', '/api/collections/synthetic_storage/records/' + late['id'], token=users[0][1])
             recovered_admin = s.superuser_token(base, env[prefix + '_SUPERUSER_EMAIL'], env[prefix + '_SUPERUSER_PASSWORD'])
             assert api('GET', '/api/context/maintenance', token=recovered_admin)['state'] == 'writable'
-            assert 'post-restore integrity check passed' in s.logs(third)
+            assert 'database restored and remote files readable' in s.logs(third)
             s.docker('exec', third, 'test', '-f', '/storage/pb_data/auxiliary.db')
             s.stop(third)
             s.check_logs(third)

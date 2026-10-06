@@ -199,20 +199,13 @@ def main():
                            headers={'X-Forwarded-For': ip})['token']
 
         def entrypoint(**env):
-            """The --origins flag that docker/entrypoint.sh passes to the server, or None. The server path is replaced by a stub."""
-            stub, script = Path(tmp) / 'server-stub.sh', Path(tmp) / 'entrypoint.sh'
-            stub.write_text('#!/bin/sh\nfor arg in "$@"; do printf \'%s\\n\' "$arg"; done\n')
-            stub.chmod(0o755)
-            source = (ROOT / 'docker' / 'entrypoint.sh').read_text()
-            assert source.count('SERVER=/usr/local/bin/pocketcontext\n') == 1
-            script.write_text(source.replace('SERVER=/usr/local/bin/pocketcontext\n', f'SERVER={stub}\n'))
-            subprocess.run(['sh', '-n', str(ROOT / 'docker' / 'entrypoint.sh')], check=True)
-            # This fixture checks origins only; it has no running replica daemon.
-            # Real IPC readiness remains covered by maintenance/container tests.
-            done = subprocess.run(['sh', str(script), 'serve'], env={**clean, 'LITESTREAM_DISABLED': 'true', **env}, check=True, capture_output=True, text=True)
-            flags = [line for line in done.stdout.splitlines() if line.startswith('--origins')]
-            assert len(flags) <= 1 and '--http=0.0.0.0:80' in done.stdout.splitlines(), done.stdout
-            return flags[0] if flags else None
+            """Exercise the actual entrypoint origin builder without a replica daemon."""
+            import importlib.util
+            spec = importlib.util.spec_from_file_location('runtime', ROOT / 'docker/entrypoint.py')
+            runtime = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(runtime)
+            origins = runtime.browser_origins(env)
+            return '--origins=' + origins if origins else None
 
         try:
             subprocess.run(common + ['superuser', 'upsert', ADMIN, ADMIN_PASSWORD], cwd=ROOT, env=clean, check=True, capture_output=True)

@@ -33,10 +33,10 @@ def main():
                    {**remote, PREFIX + '_S3_FORCE_PATH_STYLE': 'invalid'},
                    {**remote, 'LITESTREAM_BUCKET': 'synthetic-files'},
                    {**remote, 'LITESTREAM_ACCESS_KEY_ID': 'synthetic-file-key'}):
-        result = subprocess.run(['sh', str(ROOT / 'docker/entrypoint.sh')],
+        result = subprocess.run(['python3', str(ROOT / 'docker/entrypoint.py')],
             env={**clean, **values}, capture_output=True, timeout=5)
         assert result.returncode != 0
-        assert b'primary' in result.stderr, 'failed after unsafe preflight'
+        assert b'entrypoint: error:' in result.stderr, 'failed after unsafe preflight'
         assert b'synthetic-file-secret' not in result.stdout + result.stderr
         assert b'synthetic-file-key' not in result.stdout + result.stderr
     with tempfile.TemporaryDirectory(prefix=ROOT.name + '-storage-') as tmp:

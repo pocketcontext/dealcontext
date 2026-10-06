@@ -1,4 +1,4 @@
-# DealContext image for Basecamp ONCE: HTTP on port 80, GET /up, all state under /storage.
+# DealContext image for Basecamp ONCE: HTTP on port 80, GET /up, SQLite state under /storage; primary files in private S3.
 # Build context: this repository. See .dockerignore for the files that enter it.
 #
 # Pinned inputs and how to refresh them:
@@ -8,8 +8,8 @@
 # - PocketContext: the commit in POCKETCONTEXT_VERSION; its Go modules are verified against go.sum.
 # - Litestream: version and SHA-256 of the release archives, from the release's checksums.txt
 #   (the same values as the asset digests of the GitHub release API).
-# Not pinned: the Debian packages ca-certificates and tini, which come from the stable archive
-# at build time so that certificate updates are included.
+# Debian runtime packages come from the stable archive when the APT layer is rebuilt;
+# refresh that layer explicitly to incorporate package updates.
 
 FROM node:24-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS reader
 WORKDIR /ui
@@ -64,13 +64,13 @@ RUN go build -trimpath -tags sqlite_math_functions -ldflags '-s -w' -o /out/pock
 
 FROM debian:trixie-20260918-slim@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates tini python3 \
+    && apt-get install -y --no-install-recommends ca-certificates tini python3 python3-boto3 \
     && rm -rf /var/lib/apt/lists/* \
     && test -x /usr/bin/tini
 
 COPY --from=build /out/pocketcontext /out/litestream /usr/local/bin/
 COPY docker/litestream.yml /etc/litestream.yml
-COPY --chmod=0755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=0755 docker/entrypoint.py /usr/local/bin/dealcontext-entrypoint.py
 WORKDIR /app
 COPY POCKETCONTEXT_VERSION pocketcontext.json ./
 COPY pb_migrations/ ./pb_migrations/
@@ -82,7 +82,7 @@ COPY --from=reader /ui/dist/ ./ui/dist/
 ENV DEALCONTEXT_RATE_LIMITS=true
 VOLUME /storage
 EXPOSE 80
-ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/dealcontext-entrypoint.py"]
 
 ARG REVISION=unknown
 LABEL org.opencontainers.image.title="DealContext" \
