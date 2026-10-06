@@ -49,9 +49,10 @@ jobs:
           trap 'docker rm "$container" >/dev/null' EXIT
           docker cp "$container:/usr/local/bin/pocketcontext" "$RUNNER_TEMP/maintenance-server"
           python3 tests/maintenance.py --binary "$RUNNER_TEMP/maintenance-server"
+          python3 tests/object_storage.py --binary "$RUNNER_TEMP/maintenance-server"
       - name: Show the image
         run: |
-          docker image inspect dealcontext:ci --format '{{json .Config}}' | python3 -m json.tool
+          docker image inspect dealcontext:ci --format 'id={{.Id}} digests={{json .RepoDigests}}'
           docker run --rm --entrypoint sh dealcontext:ci -c 'set -eu; litestream version; pocketcontext --version; cat /app/POCKETCONTEXT_VERSION; find /app /usr/local/bin -type f | sort; test ! -e /app/pb_hooks/.gitkeep'
       - name: Startup errors for missing configuration
         run: python3 docker/smoke.py config --image dealcontext:ci
@@ -59,6 +60,8 @@ jobs:
         run: python3 docker/smoke.py smoke --image dealcontext:ci
       - name: Restore drill
         run: python3 docker/smoke.py restore --image dealcontext:ci
+      - name: Protected S3 files and frozen fresh-volume recovery
+        run: python3 docker/object_storage_smoke.py --image dealcontext:ci --minio-image dealcontext-minio-fixture:9e49d5e-7394ce0
 
   # Main only, from here on (a push, or a manual run on main). The four Python tests gate the publication.
   tests:

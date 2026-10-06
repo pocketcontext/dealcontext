@@ -403,7 +403,7 @@ def restore(image, tmp, run_id):
         docker('rm', '-f', '-v', name)
         docker('volume', 'rm', volume)
         volumes.remove(volume)
-        status, _ = docker('volume', 'inspect', volume, ok=False)
+        status, _ = docker('volume', 'inspect', '-f', '{{.Name}}', volume, ok=False)
         check(status != 0, f'container {name} and volume {volume} are gone')
 
     first, second, third = (f'dc-drill-{letter}-{run_id}' for letter in 'abc')
@@ -465,10 +465,9 @@ def report_and_clean(failed):
             text = logs(name)
             say(f'---- logs of {name} (masked) ----')
             say(text)
-            say(docker('inspect', '-f', 'state: {{json .State}}', name, ok=False)[1])
+            say(docker('inspect', '-f', 'running={{.State.Running}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}', name, ok=False)[1])
             if os.environ.get('GITHUB_ACTIONS') == 'true':
                 say('::endgroup::')
-        say(docker('ps', '-a', ok=False)[1])
     step('cleaning up')
     for name in containers:
         docker('rm', '-f', '-v', name, ok=False)

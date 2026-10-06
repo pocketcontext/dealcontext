@@ -9,7 +9,10 @@ routerAdd("GET", "/up", (e) => require(`${__hooks}/deploy.js`).up(e), $apis.skip
 onBootstrap((e) => {
   e.next();
   // Frozen startup preserves existing settings and authentication identities.
-  if (e.app.store().get("pocketcontextMaintenanceReadOnly") === true) return;
+  if (e.app.store().get("pocketcontextMaintenanceReadOnly") === true) {
+    require(`${__hooks}/storage.js`).configure(e.app, true);
+    return;
+  }
   require(`${__hooks}/deploy.js`).settings(e.app);
   require(`${__hooks}/deploy.js`).googleOAuth(e.app);
 });

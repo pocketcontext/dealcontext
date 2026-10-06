@@ -29,6 +29,7 @@ function up(e) {
 // Copies the environment contract into the settings. Every group is saved on its own, and only when a value
 // differs from the stored one. A group with no variables set changes nothing. Log lines carry no secret values.
 function settings(app) {
+  require(`${__hooks}/storage.js`).configure(app, false);
   const group = (name, detail, change) => {
     const current = app.settings(), changed = [];
     const set = (section, key, value) => {
