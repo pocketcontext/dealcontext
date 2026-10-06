@@ -522,3 +522,12 @@ PocketBase's auxiliary database or the maintenance marker. Frozen startup refuse
 to create the missing auxiliary database. Preserve both bundle files privately
 alongside the verified primary restore. This differs from writable disaster recovery,
 where a fresh startup can create auxiliary state. These tests do not migrate live files.
+
+### Pause continuous deployment
+
+Set the repository Actions variable `CONTEXT_DEPLOY_PAUSED=true` to keep CI and
+image publication running while the deployment job is skipped. Preserve the
+existing `COLORS_PROFILE`; clearing it is not the pause mechanism. Resume only
+when a deployment is intended by setting `CONTEXT_DEPLOY_PAUSED=false` (or deleting
+that variable). The pause applies to newly evaluated jobs; separately finish or
+cancel any deployment already running before treating the host as fenced.

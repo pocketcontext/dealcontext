@@ -22,6 +22,14 @@ installer = load("installer", "install.py")
 
 
 class DeploymentTests(unittest.TestCase):
+    def test_cd_pause_blocks_only_deployment_and_preserves_profile(self):
+        workflow = (ROOT / ".github/workflows/image.yml").read_text()
+        publication, deployment = workflow.split("  deploy:\n", 1)
+        self.assertEqual(deployment.splitlines()[0].strip(),
+                         "if: vars.CONTEXT_DEPLOY_PAUSED != 'true' && vars.COLORS_PROFILE != ''")
+        self.assertNotIn("CONTEXT_DEPLOY_PAUSED", publication)
+        self.assertIn("name: ${{ vars.COLORS_PROFILE }}", deployment)
+
     def run_hook(self, fail=None, killed=False, count=1, recovery_count=None):
         calls = []
         inspections = 0
