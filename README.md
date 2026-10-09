@@ -553,6 +553,5 @@ manual Rybbit reporting live outside this CRM; no GA4 identity, worker or notifi
 See the skill's schema and workflow references for immutable fields and attribution limits.
 
 During development use `.venv/bin/dealcontext` after `uv venv && uv pip install -e .`.
-The portable launcher remains pinned to the previously published package and does not yet
-provide these commands. Publish and verify the new package, then update/test the launcher
-pin before releasing this skill. Apply the migration and SQL configuration together.
+The portable launcher pins the published package with these commands. Apply the migration
+and SQL configuration together before using outreach commands against a server.
