@@ -1,6 +1,6 @@
 ---
 name: dealcontext
-description: Operate DealContext CRM through its HTTP API with the bundled dealcontext client. Use for deals, pipelines, stages, contacts, organizations, follow-up activities, messages, notes, web enquiries, and audit history. Create or update records, record incoming or outgoing messages, schedule follow-ups, close deals, triage enquiries, and review the pipeline. Uses DEALCONTEXT_URL and DEALCONTEXT_AGENT_EMAIL, with Google login or an account password.
+description: Operate DealContext CRM through its HTTP API with the bundled dealcontext client. Use for deals, pipelines, stages, contacts, organizations, follow-up activities, messages, notes, web enquiries, outreach links, and audit history. Create or update records, record incoming or outgoing messages, schedule follow-ups, close deals, triage enquiries, and review the pipeline. Uses DEALCONTEXT_URL and DEALCONTEXT_AGENT_EMAIL, with Google login or an account password.
 ---
 
 # DealContext
@@ -36,6 +36,9 @@ dealcontext get <collection> <id>
 dealcontext create <collection> '<json object>'    or: ... -             (JSON on standard input)
 dealcontext update <collection> <id> '<json object with the fields to change>'
 dealcontext batch '<json array of {"method","url","body"}>'
+dealcontext outreach-create --person ID --owner ID --destination HTTPS_URL --campaign NAME --content-version VERSION
+dealcontext outreach-list --person ID
+dealcontext outreach-export --destination HTTPS_URL --content-version VERSION --output ABS_PATH
 ```
 
 Output is the server's JSON on stdout; add `--pretty` to indent it. Errors go to stderr with the HTTP status and the server's JSON body. Exit codes: 0 success, 1 HTTP or transport error, 2 usage or configuration error, 3 `check` found differences, 4 HTTP 409. There is no delete command. Use standard input for JSON or SQL that contains single quotes.
@@ -77,6 +80,8 @@ Prefer one `batch` for a workflow that writes more than one record, for example 
  {"method":"POST","url":"/api/collections/activities/records","body":{"subject":"Follow up with Acme","kind":"call","deal":"<newid>","owner":"<agent-id>","due_at":"2026-09-25 09:00:00.000Z"}}]
 JSON
 ```
+
+For recipient-linked website outreach, read `references/workflows.md`, "Create an outreach link". Attribution identifies activity through a link, not a verified person. Creating a link sends nothing.
 
 ## Errors
 

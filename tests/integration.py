@@ -16,7 +16,7 @@ import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-CRM = ['organizations', 'people', 'pipelines', 'stages', 'deals', 'activities', 'notes', 'messages']
+CRM = ['organizations', 'people', 'pipelines', 'stages', 'deals', 'activities', 'notes', 'messages', 'outreach_links']
 
 
 @contextlib.contextmanager
@@ -296,6 +296,39 @@ onRecordDeleteExecute((e) => {
             request('PATCH', f'/api/collections/deals/records/{deal["id"]}', {'stage': second['id']}, token)
             activity = create('activities', {'subject': 'Follow up', 'kind': 'call', 'deal': deal['id'], 'owner': agent['id'], 'due_at': '2030-01-01 09:00:00.000Z'})
             note = create('notes', {'body': 'Customer requested a renewal proposal.', 'deal': deal['id'], 'owner': agent['id'], 'source_url': 'https://example.com/evidence'})
+            with item('outreach identity is immutable, private to agents, uniquely tokenized and audited'):
+                payload = {'person': person['id'], 'owner': agent['id'], 'token': 'a' * 32,
+                           'destination': 'https://example.com/r/partnership/', 'campaign': 'Synthetic partnership', 'content_version': 'v1'}
+                outreach = create('outreach_links', payload)
+                assert outreach['created_by'] == agent['id']
+                assert audit('outreach_links', outreach, 'create')[0]['changes']['after']['token'] == payload['token']
+                assert request('GET', one('outreach_links', outreach), token=token2)['person'] == person['id']
+                assert sql("SELECT token FROM outreach_links LIMIT 1")['rows'] == [[payload['token']]]
+                request('GET', one('outreach_links', outreach), expected=404)
+                request('POST', many('outreach_links'), payload, expected=400)
+                request('DELETE', one('outreach_links', outreach), token=token, expected=403)
+                reject('POST', many('outreach_links'), payload, ['token'])
+                for bad in ['short', 'G' * 32]:
+                    reject('POST', many('outreach_links'), {**payload, 'token': bad}, ['token'])
+                for field in ['person', 'owner', 'campaign', 'content_version']:
+                    reject('POST', many('outreach_links'), {**payload, 'token': 'b' * 32, field: ''}, [field])
+                for destination in ['http://example.com/', 'https://user@example.com/', 'https://example.com/?x=1', 'https://example.com/#x']:
+                    reject('POST', many('outreach_links'), {**payload, 'token': 'b' * 32, 'destination': destination}, ['destination'])
+                other_person = create('people', {'name': 'Synthetic second person', 'owner': agent['id']})
+                before = audit_count()
+                for field, value in [('token', 'b' * 32), ('person', other_person['id']), ('destination', 'https://example.com/other/'), ('content_version', 'v2')]:
+                    reject('PATCH', one('outreach_links', outreach), {field: value}, [field])
+                    reject('PATCH', one('outreach_links', outreach), {field: value}, [field], auth=admin)
+                assert audit_count() == before
+                request('POST', '/api/batch', {'requests': [
+                    {'method': 'POST', 'url': many('outreach_links'), 'body': {**payload, 'token': 'b' * 32}},
+                    {'method': 'PATCH', 'url': one('outreach_links', outreach), 'body': {'content_version': 'v2'}},
+                ]}, token, expected=400)
+                assert audit_count() == before
+                assert sql("SELECT id FROM outreach_links WHERE token = '" + 'b' * 32 + "'")['rows'] == []
+                updated = request('PATCH', one('outreach_links', outreach), {'owner': agent2['id'], 'campaign': 'Renamed'}, token2)
+                assert updated['updated_by'] == agent2['id'] and updated['created_by'] == agent['id']
+                assert audit('outreach_links', outreach, 'update')[0]['actor'] == agent2['id']
             schema = request('GET', '/api/context/schema', token=token)
             assert 'deals' in json.dumps(schema)
             result = request('POST', '/api/context/query', {'sql': "SELECT d.title,s.name AS stage,p.name AS person FROM deals d JOIN stages s ON s.id=d.stage JOIN people p ON p.id=d.person"}, token)

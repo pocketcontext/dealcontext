@@ -85,3 +85,16 @@ The client stores only the DealContext token, never Google's access or refresh t
 ## Linking records for humans
 
 Use the configured application origin followed by `/#/<collection>/<record-id>` when referencing a record in wiki content. The reader requires the recipient’s own authorized account. Links show the current record, not an immutable historical snapshot; retain cited evidence in WikiContext when a fixed historical claim is needed. Do not include tokens, protected download URLs, or private record text in link labels intended for a broader audience.
+
+## Create an outreach link
+
+1. Resolve the requested contact through SQL. Select `id`, `name` and enough company information to distinguish matches; ask the user if the contact is ambiguous. Use the exact `people.id`, never infer identity from a name alone.
+2. Confirm an instrumented destination and its deployed content version. The creation command does not publish or check a website. Use `whoami` for your owner ID, or resolve another owner through `agent_directory`.
+3. Check `outreach-list --person <id>` for an existing matching outreach before creating another. Run `outreach-create --person <id> --owner <id> --destination https://example.com/r/article/ --campaign partnership --content-version v1`. It generates a fresh cryptographic token, writes through authenticated REST and returns the record plus `share_url`.
+4. Export the current article routes with `outreach-export --destination https://example.com/r/article/ --content-version v1 --output /absolute/private/routes.json`. This reads all matching records with pagination and atomically replaces the specified file with a mode-0600 JSON array of token, destination and content_version only. Symlinks are refused. Keep the file outside Git; pass its path as `OUTREACH_ROUTES_FILE` when building the website. Rebuild, deploy and verify each route before giving the user a working URL. Creating a CRM record alone does not publish or send the link.
+5. The share URL is the destination origin plus `/r/<token>/`, with no query or fragment. It appears in ordinary HTTP paths and server logs. The instrumented page must capture it and replace the address bar with the common article URL before initializing analytics, keep it out of GA4 and send only the opaque token to Rybbit custom events.
+6. Use the separately installed outreach reporting skill to inspect Rybbit manually. CRM mappings contain no visit data. Report activity through the contact's link, not confirmed personal identity; previews, forwarding, blocked analytics and incomplete retention affect interpretation.
+
+After an ambiguous write timeout, list the contact's outreach records and inspect destination, campaign and creation time before retrying. Retrying `outreach-create` generates another token. An existing article may change independently of its stored version; compare the observed event content version when reporting. Never put contact names, email addresses or CRM IDs in public page assets or analytics properties.
+
+If the recipient or destination was wrong, stop sharing that URL and create a correct record. Ordinary agents cannot remap immutable fields or delete the incorrect record; give the user its ID for operator deletion and explain that historical Rybbit activity may remain. Deleting the mapping does not revoke access to a public article.

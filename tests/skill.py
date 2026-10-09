@@ -467,6 +467,50 @@ def main():
             pretty, _ = dc('get', 'organizations', org['id'], '--pretty')
             assert pretty.startswith('{\n  "') and json.loads(pretty)['id'] == org['id'], pretty
             assert json.loads(dc('--pretty', 'get', 'organizations', org['id'])[0])['id'] == org['id']
+        with item('outreach commands generate opaque links, list safely, and reject invalid destinations'):
+            person = out('create', 'people', json.dumps({'name': 'Synthetic recipient', 'owner': me['id']}))
+            arguments = ('--person', person['id'], '--owner', me['id'], '--campaign', 'Synthetic', '--content-version', 'v1')
+            link = out('outreach-create', *arguments, '--destination', 'https://example.com/r/partnership/')
+            assert re.fullmatch('[a-f0-9]{32}', link['token']), link
+            assert link['share_url'] == 'https://example.com/r/' + link['token'] + '/'
+            listed = out('outreach-list', '--person', person['id'])['items']
+            assert len(listed) == 1 and listed[0]['id'] == link['id'] and listed[0]['share_url'] == link['share_url']
+            assert out('outreach-list', '--person', "' OR 1=1 --")['items'] == []
+            for start in range(0, 100, 20):
+                writes = [{'method': 'POST', 'url': '/api/collections/outreach_links/records', 'body': {
+                    'person': person['id'], 'owner': me['id'], 'token': f'{number:032x}',
+                    'destination': 'https://example.com/r/partnership/', 'campaign': 'Pagination', 'content_version': 'v1',
+                }} for number in range(start, start + 20)]
+                out('batch', json.dumps(writes))
+            complete = out('outreach-list', '--person', person['id'])['items']
+            assert len(complete) == 101 and len({row['id'] for row in complete}) == 101
+            assert link['publication_status'] == 'requires_website_build'
+            manifest = tmp / 'routes.json'
+            export_args = ('--destination', 'https://example.com/r/partnership/', '--content-version', 'v1', '--output', str(manifest))
+            exported = out('outreach-export', *export_args)
+            manifest_rows = json.loads(manifest.read_text())
+            assert exported['count'] == 101 and exported['published'] is False
+            assert len(manifest_rows) == 101 and manifest.stat().st_mode & 0o777 == 0o600
+            assert all(set(row) == {'token', 'destination', 'content_version'} for row in manifest_rows)
+            assert {row['token'] for row in manifest_rows} == {row['token'] for row in complete}
+            # A second version must not contaminate this build's manifest.
+            out('outreach-create', '--person', person['id'], '--owner', me['id'], '--campaign', 'Synthetic',
+                '--content-version', 'v2', '--destination', 'https://example.com/r/partnership/')
+            assert out('outreach-export', *export_args)['count'] == 101
+            assert out('outreach-export', '--destination', 'https://example.com/other/', '--content-version', "v1' OR 1=1 --", '--output', str(manifest))['count'] == 0
+            assert json.loads(manifest.read_text()) == []
+            dc('outreach-export', '--destination', 'https://example.com/', '--content-version', 'v1', '--output', 'relative.json', expect=2)
+            protected = tmp / 'protected.txt'
+            protected.write_text('unchanged')
+            manifest.unlink()
+            manifest.symlink_to(protected)
+            dc('outreach-export', *export_args, expect=2)
+            assert protected.read_text() == 'unchanged'
+            for destination in ['http://example.com/', 'https://user@example.com/', 'https://example.com/?x=1', 'https://example.com/#x']:
+                _, err = dc('outreach-create', *arguments, '--destination', destination, expect=2)
+                assert 'destination must be HTTPS' in err
+            _, err = dc('outreach-create', *arguments, '--destination', 'https://[broken', expect=2)
+            assert 'destination must be a valid HTTPS URL' in err
         with item('create and update drop created_by and updated_by with a note on stderr'):
             stdout, err = dc('create', 'organizations', json.dumps({'name': 'Stamped', 'owner': me['id'], 'created_by': 'someoneelse00001'}))
             assert 'created_by' in err and json.loads(stdout)['created_by'] == me['id'], (stdout, err)

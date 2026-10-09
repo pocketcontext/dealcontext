@@ -12,7 +12,7 @@ const CURRENCIES = ("AED AFN ALL AMD AOA ARS AUD AWG AZN BAM BBD BDT BHD BIF BMD
 
 // Custom (non-column) record key that carries the API actor from the request hook to the execute hook.
 const ACTOR_KEY = "_audit_actor";
-const CRM = ["organizations", "people", "pipelines", "stages", "deals", "activities", "notes", "messages"];
+const CRM = ["organizations", "people", "pipelines", "stages", "deals", "activities", "notes", "messages", "outreach_links"];
 // Collections that hold public input: only these fields reach audit_log, so the log keeps no submitted values.
 const AUDITED = {enquiries: {update: ["status", "person", "deal"], delete: ["status"]}};
 
@@ -24,6 +24,19 @@ function validate(app, record) {
     for (const field of fields) errors[field] = errors[field] || new ValidationError(code, message);
   };
   const empty = (field) => record.getString(field) === "";
+  if (name === "outreach_links") {
+    const destination = record.getString("destination");
+    if (destination.length > 2048 || !/^https:\/\/[^\s/?#@\\]+(?:\/[^\s?#\\]*)?$/.test(destination)) {
+      fail(["destination"], "validation_destination", "destination must be HTTPS without credentials, query, fragment or whitespace (maximum 2048 characters)");
+    }
+    if (!record.isNew()) {
+      for (const field of ["token", "person", "destination", "content_version"]) {
+        if (record.getString(field) !== record.original().getString(field)) {
+          fail([field], "validation_immutable", field + " is immutable; create a new outreach link");
+        }
+      }
+    }
+  }
   if (name === "deals") {
     const status = record.getString("status");
     if (status === "open") {

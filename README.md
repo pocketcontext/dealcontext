@@ -96,7 +96,7 @@ Check the setup from the installed skill directory:
 
 `dealcontext` runs a pinned Python package through uv. It caches the login token in `$XDG_CACHE_HOME/dealcontext/` (default `~/.cache/dealcontext/`) with mode 0600, never prints the password or token, and has no delete command. `dealcontext logout` removes the cached token and version metadata. When `check` reports differences, the server is newer or older than the installed skill: the live schema is authoritative, and updating the skill brings the reference files back in line.
 
-Remote commands automatically compare the installed skill revision with `GET /api/dealcontext/skill-version`, which requires an agent login and returns `{"recommendedRevision":2}`. If the server recommends a newer revision, the client warns on stderr with update instructions; normal command JSON and exit codes are unchanged. The assistant must relay that warning to the user. The client never installs updates or blocks operations because of a revision mismatch.
+Remote commands automatically compare the installed skill revision with `GET /api/dealcontext/skill-version`, which requires an agent login and returns `{"recommendedRevision":4}`. If the server recommends a newer revision, the client warns on stderr with update instructions; normal command JSON and exit codes are unchanged. The assistant must relay that warning to the user. The client never installs updates or blocks operations because of a revision mismatch.
 
 Version metadata is cached separately from the login token for five minutes, scoped to the server URL, account email, and installed skill revision. `dealcontext check` always refreshes it and still compares the live schema with the snapshot. `newid` and `logout` make no requests. With an older server returning 404, commands continue silently and `dealcontext check` still provides schema comparison. Other metadata failures produce a warning and the requested command continues.
 
@@ -107,7 +107,7 @@ This identifies agent traffic to proxies that reject Python's generic user-agent
 
 ## Data and permissions
 
-The eight CRM collections, `enquiries`, `audit_log`, and `agent_directory` are SQL-readable. Auth and internal tables are excluded. The operator-managed `enquiry_notification_recipients` collection is superuser-only through the records API and excluded from agent SQL. Every authenticated `agents` account can read, create, and update all CRM records; `enquiries` has narrower rules, see [Public enquiry form](#public-enquiry-form). The `owner` relation assigns work; it does not restrict visibility.
+The nine CRM collections, `enquiries`, `audit_log`, and `agent_directory` are SQL-readable. Auth and internal tables are excluded. The operator-managed `enquiry_notification_recipients` collection is superuser-only through the records API and excluded from agent SQL. Every authenticated `agents` account can read, create, and update all CRM records; `enquiries` has narrower rules, see [Public enquiry form](#public-enquiry-form). The `owner` relation assigns work; it does not restrict visibility.
 
 `agent_directory` exposes only account IDs and display names to authenticated agents through SQL and the records API. Its `id` matches the corresponding `agents` record. The migration backfills existing accounts, and server hooks synchronize account creation and name changes. Disabled accounts remain in the directory; account deletion is blocked. Agents cannot modify the directory, and anonymous callers cannot read it. Resolve owners, stamps, and audit actors with SQL joins; names need not be unique, so continue using IDs for assignment. The existing relations still target `agents`; directory access does not change native REST relation expansion or expose authentication fields.
 
@@ -124,9 +124,9 @@ PocketBase validates fields and relations on writes. Server hooks in `pb_hooks/`
 
 PocketBase's batch API is enabled: `POST /api/batch` runs up to 20 record writes as one transaction with a 5 second timeout. The rules above, the `created_by` and `updated_by` stamps, and `audit_log` apply to each request in a batch. If one request fails, the batch returns HTTP 400 with that request's error and nothing is saved. A create may send its own 15-character `id`, so a later request in the same batch can refer to the new record; this makes "create a deal with its first activity and a note" atomic. See [examples](skills/dealcontext/references/examples.md).
 
-Deletes are superuser-only on all eight CRM collections and on `enquiries`. An agent DELETE returns 403. The operator deletes records through the dashboard or with a superuser token. Agents correct mistakes by updating records, for example closing a deal as lost or completing an activity.
+Deletes are superuser-only on all nine CRM collections and on `enquiries`. An agent DELETE returns 403. The operator deletes records through the dashboard or with a superuser token. Agents correct mistakes by updating records, for example closing a deal as lost or completing an activity.
 
-Every CRM record has `created_by` and `updated_by`. The server sets them from the authenticated agent and ignores values an agent sends. Superuser requests leave them unchanged. `audit_log` receives one row for each create, update, and delete made through the records API on the eight CRM collections, by agents and superusers, with the actor and the changed values. A no-op update and a rejected write add no row. The log is append-only for agents: they can read it through SQL and the records API, and its create, update, and delete rules are superuser-only. Internal relation clears that follow an operator delete are not logged. `enquiries` is logged with less detail, so that the log holds no submitted value; see [Personal data](#personal-data). Stage history is read from `audit_log`; see [examples](skills/dealcontext/references/examples.md).
+Every CRM record has `created_by` and `updated_by`. The server sets them from the authenticated agent and ignores values an agent sends. Superuser requests leave them unchanged. `audit_log` receives one row for each create, update, and delete made through the records API on the nine CRM collections, by agents and superusers, with the actor and the changed values. A no-op update and a rejected write add no row. The log is append-only for agents: they can read it through SQL and the records API, and its create, update, and delete rules are superuser-only. Internal relation clears that follow an operator delete are not logged. `enquiries` is logged with less detail, so that the log holds no submitted value; see [Personal data](#personal-data). Stage history is read from `audit_log`; see [examples](skills/dealcontext/references/examples.md).
 
 `created_by` and `updated_by` are optional relations, so deleting an agent account clears those stamps on its records. `audit_log.actor` is plain text and keeps the ID. PocketBase also refuses to delete an agent while records name it as `owner`. To retire an agent and keep its stamps, change its password instead of deleting the account.
 
@@ -349,7 +349,7 @@ python3 docker/smoke.py restore --image dealcontext:ci   # the restore drill
 
 ## Verify
 
-For a change that users need in their installed skill, increment the recommendation in `pb_hooks/skill_version.pb.js` and `SKILL_REVISION` in `skills/dealcontext/dealcontext` together. The skill revision is independent of the server release: unrelated releases do not need a bump. Tests check that the published recommendation and bundled client agree.
+For a change that users need in their installed skill, increment the recommendation in `pb_hooks/skill_version.pb.js` and `SKILL_REVISION` in `src/dealcontext_client/cli.py` together. The skill revision is independent of the server release: unrelated releases do not need a bump. Tests check that the published recommendation and bundled client agree.
 
 ```sh
 python3 tests/integration.py --binary ../pocketcontext/bin/pocketcontext
@@ -536,3 +536,23 @@ existing `COLORS_PROFILE`; clearing it is not the pause mechanism. Resume only
 when a deployment is intended by setting `CONTEXT_DEPLOY_PAUSED=false` (or deleting
 that variable). The pause applies to newly evaluated jobs; separately finish or
 cancel any deployment already running before treating the host as fenced.
+
+## Manual outreach attribution
+
+`outreach_links` stores authenticated CRM contact-to-token mappings. Source client commands
+`outreach-create --person ID --owner ID --destination HTTPS_URL --campaign NAME --content-version VERSION`
+and `outreach-list --person ID` create and retrieve clean random-path share URLs. Creating a
+link sends no message and does not publish a website route.
+Export with `outreach-export --destination HTTPS_URL --content-version VERSION --output ABS_PATH`.
+This writes a private mode-0600 JSON array containing only token, destination and content_version,
+filtered to the exact destination/version and paginated through authenticated SQL. The explicit
+output path is atomically replaced; symlinks are refused. Pass the absolute private file path as
+`OUTREACH_ROUTES_FILE` when building the website, then deploy and verify routes before sharing.
+Keep manifests outside Git. Website instrumentation and
+manual Rybbit reporting live outside this CRM; no GA4 identity, worker or notification is added.
+See the skill's schema and workflow references for immutable fields and attribution limits.
+
+During development use `.venv/bin/dealcontext` after `uv venv && uv pip install -e .`.
+The portable launcher remains pinned to the previously published package and does not yet
+provide these commands. Publish and verify the new package, then update/test the launcher
+pin before releasing this skill. Apply the migration and SQL configuration together.

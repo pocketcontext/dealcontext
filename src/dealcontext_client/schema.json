@@ -103,6 +103,19 @@
       {"name": "updated_by", "type": "TEXT"},
       {"name": "website", "type": "TEXT"}
     ]},
+    {"name": "outreach_links", "columns": [
+      {"name": "campaign", "type": "TEXT"},
+      {"name": "content_version", "type": "TEXT"},
+      {"name": "created", "type": "TEXT"},
+      {"name": "created_by", "type": "TEXT"},
+      {"name": "destination", "type": "TEXT"},
+      {"name": "id", "type": "TEXT"},
+      {"name": "owner", "type": "TEXT"},
+      {"name": "person", "type": "TEXT"},
+      {"name": "token", "type": "TEXT"},
+      {"name": "updated", "type": "TEXT"},
+      {"name": "updated_by", "type": "TEXT"}
+    ]},
     {"name": "people", "columns": [
       {"name": "created", "type": "TEXT"},
       {"name": "created_by", "type": "TEXT"},

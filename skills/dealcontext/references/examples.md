@@ -263,3 +263,19 @@ A body that names `name`, `email`, `details`, `source`, or a `utm_` column is re
 Do not send `created_by` or `updated_by`, and do not send DELETE requests; agents cannot delete records. `dealcontext create` and `dealcontext update` remove the two fields from the body and say so on stderr.
 
 Use HTTP clients that encode JSON correctly. For SQL literals, use a trusted SQL literal encoder rather than interpolating raw user text. Check the response's truncation indicator and use ordered pagination when needed.
+
+## Build recipient outreach routes
+
+After resolving an existing contact and owner through authenticated SQL:
+
+```sh
+dealcontext outreach-create --person <person-id> --owner <owner-id> \
+  --destination https://example.com/r/article/ --campaign partnership --content-version v1
+dealcontext outreach-export --destination https://example.com/r/article/ \
+  --content-version v1 --output /absolute/private/outreach-routes.json
+```
+
+The returned share URL is `https://example.com/r/<random-token>/`. It is not published
+by either command. Build the website with `OUTREACH_ROUTES_FILE` pointing to the private
+manifest, deploy and verify the URL before sharing. Do not commit the manifest. It contains
+only token, destination and content_version, never contact names or CRM record IDs.

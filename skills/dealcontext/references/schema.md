@@ -12,6 +12,7 @@ Every CRM record has `id`, `created`, `updated`, `created_by`, and `updated_by`.
 | activities | subject, kind, owner, due_at (required); deal, person, organization, done, completed_at, description |
 | notes | body, owner (required); deal, person, organization, source_url |
 | messages | person, owner, channel, direction, body (required); sent_at, source_url |
+| outreach_links | person, owner, token, destination, campaign, content_version (all required) |
 
 Deal status is `open`, `won`, or `lost`. Activity kind is `call`, `meeting`, `email`, or `task`. Stage position is unique within its pipeline. A deal belongs to a pipeline through its stage; join `deals.stage = stages.id` and `stages.pipeline = pipelines.id`.
 
@@ -91,11 +92,11 @@ Auditing differs from the CRM collections so that `audit_log` never holds a subm
 
 ## Deletes
 
-Deletes are superuser-only on all eight CRM collections and on `enquiries`; an agent DELETE returns 403. The operator deletes through the dashboard or with a superuser token. Required relations prevent deleting records still referenced by them. Optional relations are cleared when their target is deleted, and that internal clear is not validated, so a note can be left without a link after the operator deletes its only target. The note rule applies again on that note's next save. The same holds for an enquiry: when the operator deletes its person, the enquiry stays `qualified` with an empty `person`, and its next update must set a person or another status.
+Deletes are superuser-only on all nine CRM collections and on `enquiries`; an agent DELETE returns 403. The operator deletes through the dashboard or with a superuser token. Required relations prevent deleting records still referenced by them. Optional relations are cleared when their target is deleted, and that internal clear is not validated, so a note can be left without a link after the operator deletes its only target. The note rule applies again on that note's next save. The same holds for an enquiry: when the operator deletes its person, the enquiry stays `qualified` with an empty `person`, and its next update must set a person or another status.
 
 ## audit_log
 
-`audit_log` records writes made through the records API on the eight CRM collections, by agents and superusers. `enquiries` is logged with less detail, see [enquiries](#enquiries). Agents can read it through SQL and through the records API. Its create, update, and delete rules are superuser-only, so agents cannot add, change, or remove rows.
+`audit_log` records writes made through the records API on the nine CRM collections, by agents and superusers. `enquiries` is logged with less detail, see [enquiries](#enquiries). Agents can read it through SQL and through the records API. Its create, update, and delete rules are superuser-only, so agents cannot add, change, or remove rows.
 
 | Field | Content |
 | --- | --- |
@@ -116,3 +117,9 @@ Deletes are superuser-only on all eight CRM collections and on `enquiries`; an a
 A rejected write leaves no row. The log does not cover everything: when the operator deletes a record, PocketBase clears optional relations that pointed to it without an `audit_log` row, and records that existed before the log was added have no `create` row. Rows are ordered by `created`, which has millisecond resolution, so two writes in the same millisecond have no defined order. A `delete` row keeps the deleted record's full contents readable to every agent, except for `enquiries`. Read values with `json_extract`, for example `json_extract(changes, '$.after.stage')`. Indexes cover (`collection`, `record`, `created`) and (`actor`, `created`).
 
 Discover actual columns using `/api/context/schema` (`dealcontext schema`). The server's migrations are the source of truth. `references/schema.json` lists the SQL tables and columns at the time this skill was published, and `dealcontext check` compares it with the server. All authenticated agents share access; there is no tenant isolation or row-level SQL policy.
+
+## outreach_links
+
+Private mapping within the authenticated shared CRM, never a public lookup. `person` targets `people`; `owner` targets `agents` and assigns work, not visibility. `token` is a unique random 128-bit value encoded as exactly 32 lowercase hexadecimal characters. `destination` is an HTTPS article URL without credentials, whitespace, query or fragment, at most 2048 characters. `campaign` and `content_version` are required text, at most 128 characters each. Standard stamps and transactional API audit history apply.
+
+`token`, `person`, `destination` and `content_version` cannot change after creation, including through privileged validated saves. Create a new record for a new recipient, article destination or version. Campaign and owner may be corrected. Agents cannot delete records. The CLI derives `share_url = origin(destination) + '/r/' + token + '/'`; that value is not a database column. A token is an attribution label, not an authorization credential. Forwarding may produce multiple visitors, and visits never establish the recipient's identity.

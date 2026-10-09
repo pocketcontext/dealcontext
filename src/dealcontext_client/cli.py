@@ -34,7 +34,7 @@ ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 TIMEOUT = 30
 USER_AGENT = 'DealContext/1.0'
 # Bump with the server recommendation when installed skill behavior or guidance changes.
-SKILL_REVISION = 3
+SKILL_REVISION = 4
 SKILL_CHECK_TTL = 300
 SKILL_VERSION_PATH = '/api/dealcontext/skill-version'
 hidden = []  # The password and tokens. say() masks them in everything it prints.
@@ -481,6 +481,34 @@ def check(cfg):
     return 3
 
 
+def outreach_share_url(destination, token):
+    parsed = urllib.parse.urlsplit(destination)
+    return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, '/r/' + token + '/', '', ''))
+
+
+def write_outreach_manifest(path, rows):
+    """Replace an explicitly selected local build manifest without exposing CRM data."""
+    if not path.is_absolute() or path.is_symlink() or (path.exists() and not path.is_file()):
+        raise Fail(2, 'output must be an absolute regular-file path, not a symlink')
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent,
+                                         prefix='.outreach-', delete=False) as stream:
+            temporary = Path(stream.name)
+            os.fchmod(stream.fileno(), 0o600)
+            json.dump(rows, stream, indent=2)
+            stream.write('\n')
+            stream.flush()
+            os.fsync(stream.fileno())
+        # Recheck before replace; replace itself never follows the final symlink.
+        if path.is_symlink() or (path.exists() and not path.is_file()):
+            raise Fail(2, 'output must be an absolute regular-file path, not a symlink')
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def run(args):
     if args.command == 'newid':
         print(''.join(secrets.choice(ID_ALPHABET) for _ in range(15)))
@@ -506,6 +534,22 @@ def run(args):
         if not all(isinstance(entry, dict) for entry in requests):
             raise Fail(2, 'each batch entry must be an object with method, url, and body')
         body = {'requests': requests}
+    if args.command in ('outreach-create', 'outreach-export'):
+        destination = args.destination
+        try:
+            parsed = urllib.parse.urlsplit(destination)
+        except ValueError:
+            raise Fail(2, 'destination must be a valid HTTPS URL')
+        if (parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password
+                or parsed.query or parsed.fragment or '?' in destination or '#' in destination
+                or len(destination) > 2048 or any(c.isspace() for c in destination) or '\\' in destination):
+            raise Fail(2, 'destination must be HTTPS without credentials, query, fragment or whitespace (maximum 2048 characters)')
+    if args.command == 'outreach-export':
+        output = Path(args.output)
+        if not output.is_absolute() or output.is_symlink() or (output.exists() and not output.is_file()):
+            raise Fail(2, 'output must be an absolute regular-file path, not a symlink')
+        if not args.content_version or len(args.content_version) > 128:
+            raise Fail(2, 'content-version must contain 1 to 128 characters')
     skill_advisory(cfg, force=args.command == 'check')
     if args.command == 'check':
         return check(cfg)
@@ -522,6 +566,50 @@ def run(args):
         data = must(cfg, 'POST', '/api/context/query', {'sql': query})
         if isinstance(data, dict) and data.get('truncated'):
             say(f'WARNING: result truncated to {len(data.get("rows", []))} rows by the server\'s row or byte limit. Select fewer columns, narrow the query, or page with ORDER BY and LIMIT/OFFSET.')
+    elif args.command == 'outreach-create':
+        destination = args.destination
+        data = must(cfg, 'POST', records('outreach_links'), {
+            'person': args.person, 'owner': args.owner, 'token': secrets.token_hex(16),
+            'destination': destination, 'campaign': args.campaign, 'content_version': args.content_version,
+        })
+        data['share_url'] = outreach_share_url(data['destination'], data['token'])
+        data['publication_status'] = 'requires_website_build'
+        data['publication_note'] = 'Export routes, rebuild and deploy the website, then verify the route before sharing.'
+    elif args.command == 'outreach-list':
+        person = args.person.replace("'", "''")
+        rows, offset = [], 0
+        while True:
+            page = must(cfg, 'POST', '/api/context/query', {'sql':
+                "SELECT id, person, owner, token, destination, campaign, content_version, created, updated "
+                f"FROM outreach_links WHERE person = '{person}' ORDER BY created, id LIMIT 100 OFFSET {offset}"})
+            batch = [dict(zip(page['columns'], row)) for row in page['rows']]
+            for row in batch:
+                row['share_url'] = outreach_share_url(row['destination'], row['token'])
+            rows.extend(batch)
+            if not batch and page.get('truncated'):
+                raise Fail(1, 'outreach listing truncated without progress; narrow the query')
+            if not batch or (len(batch) < 100 and not page.get('truncated')):
+                break
+            offset += len(batch)
+        data = {'items': rows}
+    elif args.command == 'outreach-export':
+        destination = args.destination.replace("'", "''")
+        version = args.content_version.replace("'", "''")
+        rows, last_token = [], ''
+        while True:
+            page = must(cfg, 'POST', '/api/context/query', {'sql':
+                "SELECT token, destination, content_version FROM outreach_links "
+                f"WHERE destination = '{destination}' AND content_version = '{version}' "
+                f"AND token > '{last_token}' ORDER BY token LIMIT 100"})
+            batch = [dict(zip(page['columns'], row)) for row in page['rows']]
+            if not batch and page.get('truncated'):
+                raise Fail(1, 'outreach export truncated without progress')
+            rows.extend(batch)
+            if not batch or (len(batch) < 100 and not page.get('truncated')):
+                break
+            last_token = batch[-1]['token']
+        write_outreach_manifest(output, rows)
+        data = {'output': str(output), 'count': len(rows), 'published': False}
     elif args.command == 'get':
         data = must(cfg, 'GET', records(args.collection, args.id))
     elif args.command == 'create':
@@ -556,6 +644,14 @@ def parse(argv):
     add('create', 'create one record', ('collection', 'collection name'), ('json', 'JSON object, or -'))
     add('update', 'change fields of one record', ('collection', 'collection name'), ('id', 'record id'), ('json', 'JSON object with the fields to change, or -'))
     add('batch', 'send up to 20 writes as one transaction', ('json', 'JSON array of {"method","url","body"}, or -'))
+    outreach_create = commands.add_parser('outreach-create', parents=[pretty], help='create an attributed outreach link; does not send it')
+    for field in ('person', 'owner', 'destination', 'campaign', 'content-version'):
+        outreach_create.add_argument('--' + field, required=True)
+    outreach_list = commands.add_parser('outreach-list', parents=[pretty], help='list all outreach links for an exact person record id')
+    outreach_list.add_argument('--person', required=True)
+    outreach_export = commands.add_parser('outreach-export', parents=[pretty], help='export a private website route manifest; rebuild and deploy before sharing')
+    for field in ('destination', 'content-version', 'output'):
+        outreach_export.add_argument('--' + field, required=True)
     add('newid', 'print a new 15-character record id for use inside a batch')
     add('logout', 'remove the cached token')
     args = parser.parse_args(argv)
