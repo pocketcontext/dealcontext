@@ -31,7 +31,7 @@ def main():
     for table in snapshot['tables']:
      assert {c['name']for c in table['columns']}==fields[table['name']],table['name']
      api('/api/context/query',{'sql':'SELECT * FROM "'+table['name']+'" LIMIT 31'},token)
-    table='projects'if ROOT.name=='taskcontext'else'databases'if ROOT.name=='metacontext'else'organizations'
+    table='projects'if ROOT.name=='taskcontext'else'organizations'
     records=[]
     for i in range(35):
      data={'name':f'Synthetic reader {i:02}'}
