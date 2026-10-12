@@ -1,0 +1,233 @@
+[
+  {
+    "id": 35,
+    "name": "Company cluster",
+    "family": "People & relationships",
+    "description": "Company cluster: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M18 106V54H48V106 M48 106V22H80V106 M80 106V66H110V106 M58 44H70 M58 66H70 M58 88H70\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 36,
+    "name": "Contact card",
+    "family": "People & relationships",
+    "description": "Contact card: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M22 26H106V102H22Z M40 48A10 10 0 1 0 60 48A10 10 0 1 0 40 48 M34 82Q50 64 66 82 M78 46H92 M78 66H92\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 37,
+    "name": "Relationship chain",
+    "family": "People & relationships",
+    "description": "Relationship chain: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M26 42Q12 56 26 70L44 88Q58 102 72 88L86 74 M42 54L58 38Q72 24 86 38L104 56Q118 70 104 84 M48 76L80 44\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 38,
+    "name": "One network",
+    "family": "People & relationships",
+    "description": "One network: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M64 64L28 28 M64 64L100 28 M64 64V100 M18 18H38V38H18Z M90 18H110V38H90Z M54 90H74V110H54Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 39,
+    "name": "People bridge",
+    "family": "People & relationships",
+    "description": "People bridge: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M24 36A12 12 0 1 0 48 36A12 12 0 1 0 24 36 M80 36A12 12 0 1 0 104 36A12 12 0 1 0 80 36 M20 102V76H50L64 62 78 76H108V102\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 40,
+    "name": "Trusted circle",
+    "family": "People & relationships",
+    "description": "Trusted circle: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M20 64A44 44 0 1 0 108 64A44 44 0 1 0 20 64 M46 48A18 18 0 1 0 82 48A18 18 0 1 0 46 48 M36 94Q64 68 92 94\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 41,
+    "name": "Open door",
+    "family": "Opportunity & focus",
+    "description": "Open door: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M28 106V22H100V106 M28 22L78 36V92L28 106 M60 64H66\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 42,
+    "name": "Target window",
+    "family": "Opportunity & focus",
+    "description": "Target window: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M20 46V20H46 M82 20H108V46 M108 82V108H82 M46 108H20V82 M44 64A20 20 0 1 0 84 64A20 20 0 1 0 44 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 43,
+    "name": "Opportunity spark",
+    "family": "Opportunity & focus",
+    "description": "Opportunity spark: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M64 16L76 48 110 64 76 78 64 112 50 78 16 64 50 48Z\" fill=\"currentColor\" stroke=\"none\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 44,
+    "name": "Signal flag",
+    "family": "Opportunity & focus",
+    "description": "Signal flag: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M28 108V20 M28 26H104L86 48 104 70H28 M44 88H100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 45,
+    "name": "Clear opening",
+    "family": "Opportunity & focus",
+    "description": "Clear opening: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M24 104V42Q64 2 104 42V104 M46 104V54Q64 34 82 54V104 M64 76V110\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 46,
+    "name": "Focus diamond",
+    "family": "Opportunity & focus",
+    "description": "Focus diamond: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M64 18L110 64 64 110 18 64Z M64 42L86 64 64 86 42 64Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 47,
+    "name": "Prospect lens",
+    "family": "Opportunity & focus",
+    "description": "Prospect lens: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M22 54A32 32 0 1 0 86 54A32 32 0 1 0 22 54 M78 78L108 108 M40 54H68 M54 40V68\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 48,
+    "name": "Next opening",
+    "family": "Opportunity & focus",
+    "description": "Next opening: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M22 24H88V104H22 M48 64H110 M92 46L110 64 92 82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 49,
+    "name": "Opportunity compass",
+    "family": "Opportunity & focus",
+    "description": "Opportunity compass: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M64 20V34 M64 94V108 M20 64H34 M94 64H108 M46 82L54 54 82 46 74 74Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 50,
+    "name": "First light",
+    "family": "Opportunity & focus",
+    "description": "First light: an opening, target or signal that helps the right opportunity stand out.",
+    "body": "<path d=\"M20 98H108 M34 82A30 30 0 0 1 94 82 M64 20V38 M24 40L38 54 M104 40L90 54\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 51,
+    "name": "Deal dialogue",
+    "family": "Conversation & context",
+    "description": "Deal dialogue: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M20 28H92V76H48L20 100Z M108 48V104L84 88H60\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 52,
+    "name": "Conversation spark",
+    "family": "Conversation & context",
+    "description": "Conversation spark: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M20 28H108V82H56L30 106V82H20Z M48 52H58 M72 52H82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 53,
+    "name": "Connected bubbles",
+    "family": "Conversation & context",
+    "description": "Connected bubbles: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M20 22H76V66H46L20 86Z M52 66H108V108L86 94H52Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 54,
+    "name": "Reply path",
+    "family": "Conversation & context",
+    "description": "Reply path: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M28 36H100V92H28V76 M46 58L22 76 46 94 M22 76H80\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 55,
+    "name": "Shared voice",
+    "family": "Conversation & context",
+    "description": "Shared voice: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M20 30H60V70L40 90V70H20Z M68 30H108V70H88V90L68 70Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 56,
+    "name": "Conversation ladder",
+    "family": "Conversation & context",
+    "description": "Conversation ladder: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M22 24H106V48H22Z M40 64H106V88H66L40 108Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 57,
+    "name": "Context window",
+    "family": "Conversation & context",
+    "description": "Context window: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M20 24H108V96H44L20 112Z M38 44H90 M38 62H76 M38 80H58\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 58,
+    "name": "Agreement chat",
+    "family": "Conversation & context",
+    "description": "Agreement chat: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M20 28H108V82H54L26 104V82H20Z M42 54L58 70 88 42\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 59,
+    "name": "Voice bridge",
+    "family": "Conversation & context",
+    "description": "Voice bridge: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M18 28H52V64H18Z M76 64H110V100H76Z M52 46H84V64 M44 92H20V78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 60,
+    "name": "Open exchange",
+    "family": "Conversation & context",
+    "description": "Open exchange: commercial conversations and their connected records in one recognizable mark.",
+    "body": "<path d=\"M20 30H84V56H20Z M44 76H108V102H44Z M100 28L110 40 100 52 M28 78L18 90 28 102\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 61,
+    "name": "Value diamond",
+    "family": "Value & exchange",
+    "description": "Value diamond: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M64 18L104 46 64 110 24 46Z M24 46H104 M44 46L64 110 84 46 M44 46L64 18 84 46\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 62,
+    "name": "Balanced exchange",
+    "family": "Value & exchange",
+    "description": "Balanced exchange: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M20 38H106 M88 20L106 38 88 56 M108 90H22 M40 72L22 90 40 108\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 63,
+    "name": "Value stack",
+    "family": "Value & exchange",
+    "description": "Value stack: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M20 84L64 108 108 84 M20 64L64 88 108 64 M20 44L64 20 108 44 64 68Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 64,
+    "name": "Price tag",
+    "family": "Value & exchange",
+    "description": "Price tag: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M20 26H72L108 64 72 102H20Z M38 52V76 M60 64H88\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 65,
+    "name": "Value bridge",
+    "family": "Value & exchange",
+    "description": "Value bridge: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M20 92L42 36H86L108 92 M28 72H100 M50 92L64 54 78 92\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 66,
+    "name": "Exchange knot",
+    "family": "Value & exchange",
+    "description": "Exchange knot: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M22 38H70L106 74H58Z M22 74L58 38H106L70 90H22Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 67,
+    "name": "Compound value",
+    "family": "Value & exchange",
+    "description": "Compound value: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M24 104V76H52V48H80V20H108 M24 104H108V20 M42 88H58 M70 60H86\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  }
+]

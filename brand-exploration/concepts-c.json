@@ -1,0 +1,233 @@
+[
+  {
+    "id": 68,
+    "name": "Equal stake",
+    "family": "Value & exchange",
+    "description": "Equal stake: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M20 36H108 M20 92H108 M42 36V92 M86 36V92 M20 64H108\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 69,
+    "name": "Common ground",
+    "family": "Value & exchange",
+    "description": "Common ground: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M18 92H110 M28 72L48 28 64 58 80 28 100 72Z M48 92V108 M80 92V108\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 70,
+    "name": "Value prism",
+    "family": "Value & exchange",
+    "description": "Value prism: balanced exchange and durable commercial value without currency-specific imagery.",
+    "body": "<path d=\"M64 18L108 44V88L64 110 20 88V44Z M20 44L64 66 108 44 M64 66V110\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 71,
+    "name": "Signed progress",
+    "family": "Progress & outcomes",
+    "description": "Signed progress: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M20 26H108V104H20Z M36 68L54 86 94 44\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 72,
+    "name": "Won pennant",
+    "family": "Progress & outcomes",
+    "description": "Won pennant: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M28 108V20L104 46 28 74 M44 46L54 56 72 36\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 73,
+    "name": "Closing circle",
+    "family": "Progress & outcomes",
+    "description": "Closing circle: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M100 48A42 42 0 1 0 104 84 M42 64L60 82 108 30\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 74,
+    "name": "Milestone road",
+    "family": "Progress & outcomes",
+    "description": "Milestone road: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M22 102L48 74 40 54 86 22 M22 102H46 M76 22H106V48 M84 80H108\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 75,
+    "name": "Deal complete",
+    "family": "Progress & outcomes",
+    "description": "Deal complete: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M26 22H82L102 42V106H26Z M82 22V42H102 M44 70L58 84 84 58\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 76,
+    "name": "Finish line",
+    "family": "Progress & outcomes",
+    "description": "Finish line: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M26 106V20 M26 24H102V72H26 M52 24V72 M78 24V72 M26 48H102\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 77,
+    "name": "Progress arch",
+    "family": "Progress & outcomes",
+    "description": "Progress arch: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M20 102V60A44 44 0 0 1 108 60V102 M42 70L58 86 88 52\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 78,
+    "name": "Earned star",
+    "family": "Progress & outcomes",
+    "description": "Earned star: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M64 18L78 46 108 50 86 74 92 106 64 90 36 106 42 74 20 50 50 46Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 79,
+    "name": "Three wins",
+    "family": "Progress & outcomes",
+    "description": "Three wins: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M20 36L30 46 48 24 M20 66L30 76 48 54 M20 96L30 106 48 84 M66 36H108 M66 66H96 M66 96H84\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 80,
+    "name": "Closing bracket",
+    "family": "Progress & outcomes",
+    "description": "Closing bracket: clear milestones and completed agreements with an unmistakable forward rhythm.",
+    "body": "<path d=\"M46 20H22V108H46 M82 20H106V108H82 M44 64L58 78 84 48\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 81,
+    "name": "Open D",
+    "family": "Deal letterforms",
+    "description": "Open D: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M26 22H62Q106 22 106 64Q106 106 62 106H26V80 M26 48V22 M48 44V84\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 82,
+    "name": "Deal aperture",
+    "family": "Deal letterforms",
+    "description": "Deal aperture: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M24 20H64Q110 20 110 64Q110 108 64 108H24V88H64Q88 88 88 64Q88 40 64 40H44V70H24Z\" fill=\"currentColor\" stroke=\"none\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 83,
+    "name": "D pathway",
+    "family": "Deal letterforms",
+    "description": "D pathway: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M24 20H66Q106 20 106 64Q106 108 66 108H24V20 M24 64H76 M62 50L76 64 62 78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 84,
+    "name": "Double D",
+    "family": "Deal letterforms",
+    "description": "Double D: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M20 26H44Q76 26 76 64Q76 102 44 102H20Z M52 26H76Q108 26 108 64Q108 102 76 102H52\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 85,
+    "name": "Angular deal",
+    "family": "Deal letterforms",
+    "description": "Angular deal: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M24 22H66L106 64 66 106H24Z M46 44H62L82 64 62 84H46Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 86,
+    "name": "D in motion",
+    "family": "Deal letterforms",
+    "description": "D in motion: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M46 20H68Q108 20 108 64Q108 108 68 108H46 M20 40H62 M20 64H76 M20 88H62\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 87,
+    "name": "Deal notch",
+    "family": "Deal letterforms",
+    "description": "Deal notch: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M24 22H64Q106 22 106 64Q106 106 64 106H24V76H52V52H24Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 88,
+    "name": "D connection",
+    "family": "Deal letterforms",
+    "description": "D connection: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M24 22H62Q104 22 104 64Q104 106 62 106H24Z M24 44H56 M56 44V84 M24 84H82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 89,
+    "name": "D leaf",
+    "family": "Deal letterforms",
+    "description": "D leaf: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M24 108V22H64Q108 22 108 64Q108 108 64 108Z M24 108Q24 58 82 44 M24 108L82 44\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 90,
+    "name": "D horizon",
+    "family": "Deal letterforms",
+    "description": "D horizon: abstract D forms built from the idea of an open commercial relationship.",
+    "body": "<path d=\"M24 102V24H64Q106 24 106 64 M24 102H64Q106 102 106 64 M24 64H106 M44 84H82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 91,
+    "name": "Connected loops",
+    "family": "Connection & continuity",
+    "description": "Connected loops: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M20 64Q20 24 46 24Q72 24 72 64Q72 104 98 104Q110 104 110 80 M108 48Q108 24 90 24Q64 24 64 64Q64 104 38 104Q20 104 20 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 92,
+    "name": "Continuous deal",
+    "family": "Connection & continuity",
+    "description": "Continuous deal: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M22 64Q44 20 64 64Q84 108 106 64Q84 20 64 64Q44 108 22 64Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 93,
+    "name": "Partner links",
+    "family": "Connection & continuity",
+    "description": "Partner links: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M40 20H68V58H40Z M60 70H88V108H60Z M54 50V80H74\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 94,
+    "name": "Open bond",
+    "family": "Connection & continuity",
+    "description": "Open bond: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M48 24H32Q20 24 20 40V88Q20 104 36 104H48 M80 24H96Q108 24 108 40V88Q108 104 92 104H80 M42 64H86\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 95,
+    "name": "Sales orbit",
+    "family": "Connection & continuity",
+    "description": "Sales orbit: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M20 64A44 30 0 1 0 108 64A44 30 0 1 0 20 64 M48 20L80 108 M38 42L90 86\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 96,
+    "name": "Relationship weave",
+    "family": "Connection & continuity",
+    "description": "Relationship weave: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M22 22L106 106 M22 106L106 22 M22 44V84H106V44Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 97,
+    "name": "Connection diamond",
+    "family": "Connection & continuity",
+    "description": "Connection diamond: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M64 18L108 64 64 110 20 64Z M20 64H108 M64 18V110\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 98,
+    "name": "Enduring arch",
+    "family": "Connection & continuity",
+    "description": "Enduring arch: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M20 106V52Q20 20 52 20H76Q108 20 108 52V106 M44 106V60Q64 36 84 60V106\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 99,
+    "name": "Common center",
+    "family": "Connection & continuity",
+    "description": "Common center: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M24 24H52V52H24Z M76 24H104V52H76Z M24 76H52V104H24Z M76 76H104V104H76Z M52 52L76 76 M76 52L52 76\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 100,
+    "name": "Forward bond",
+    "family": "Connection & continuity",
+    "description": "Forward bond: long-lived relationships held together by memorable continuous geometry.",
+    "body": "<path d=\"M22 34H70L106 64 70 94H22V70H62 M22 34V58H62 M62 46L84 64 62 82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  }
+]

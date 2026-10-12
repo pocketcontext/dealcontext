@@ -1,0 +1,240 @@
+[
+  {
+    "id": 1,
+    "name": "Open pipeline",
+    "family": "Pipeline & flow",
+    "description": "Open pipeline: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M22 26H48V64H80V102H106 M80 26H106V52 M22 102H48V84\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 2,
+    "name": "Three stages",
+    "family": "Pipeline & flow",
+    "description": "Three stages: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M22 38H46M56 64H78M88 90H108 M34 50V76H66V90\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 3,
+    "name": "Converge",
+    "family": "Pipeline & flow",
+    "description": "Converge: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M20 24H42L68 64H108 M20 64H42 M20 104H42L68 64 M96 52L108 64 96 76\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 4,
+    "name": "Stage gate",
+    "family": "Pipeline & flow",
+    "description": "Stage gate: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M20 34H46V94H20 M62 34H84V94H62 M98 50L112 64 98 78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 5,
+    "name": "Pipeline loop",
+    "family": "Pipeline & flow",
+    "description": "Pipeline loop: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M28 30H86Q104 30 104 48V80Q104 98 86 98H42 M28 82L14 98 28 112 M46 64H82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 6,
+    "name": "Opportunity funnel",
+    "family": "Pipeline & flow",
+    "description": "Opportunity funnel: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M18 26H110L82 64V92L48 108V64Z M38 48H90\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 7,
+    "name": "Open channels",
+    "family": "Pipeline & flow",
+    "description": "Open channels: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M20 28H76Q104 28 104 54V100 M20 54H62Q78 54 78 72V100 M20 80H48V100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 8,
+    "name": "Forward current",
+    "family": "Pipeline & flow",
+    "description": "Forward current: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M18 40H82L68 26 M82 40L68 54 M110 88H46L60 74 M46 88L60 102\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 9,
+    "name": "Pipeline bridge",
+    "family": "Pipeline & flow",
+    "description": "Pipeline bridge: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M22 102V56Q22 24 54 24H76Q106 24 106 56V102 M44 102V66H84V102\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 10,
+    "name": "Stage transfer",
+    "family": "Pipeline & flow",
+    "description": "Stage transfer: a sales pipeline reduced to bold stages and a clear next move.",
+    "body": "<path d=\"M18 28H54V64H18Z M74 64H110V100H74Z M54 46H92V64 M36 64V82H74\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 11,
+    "name": "Meeting point",
+    "family": "Agreement & trust",
+    "description": "Meeting point: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M20 46L44 26 64 46 84 26 108 46 86 88H42Z M44 64L64 46 84 64 M50 100H78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 12,
+    "name": "Equal footing",
+    "family": "Agreement & trust",
+    "description": "Equal footing: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M20 42H52V86H20 M108 42H76V86H108 M52 56H76 M52 72H76\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 13,
+    "name": "Joined hands",
+    "family": "Agreement & trust",
+    "description": "Joined hands: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M18 46L36 34 58 52 78 34 110 56 88 92 62 102 34 80Z M58 52L44 68 58 78 76 62\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 14,
+    "name": "Shared bridge",
+    "family": "Agreement & trust",
+    "description": "Shared bridge: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M18 100V52L44 30 64 48 84 30 110 52V100 M44 100V66H84V100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 15,
+    "name": "Promise knot",
+    "family": "Agreement & trust",
+    "description": "Promise knot: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M30 36H68L98 64 68 92H30L58 64Z M98 36H60L30 64 60 92H98\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 16,
+    "name": "Contract seal",
+    "family": "Agreement & trust",
+    "description": "Contract seal: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M32 18H86L104 36V78 M32 18V108H62 M50 42H80 M50 60H72 M72 88L84 100 108 72\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 17,
+    "name": "Mutual gain",
+    "family": "Agreement & trust",
+    "description": "Mutual gain: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M20 92V52H60 M108 36V76H68 M20 52L54 86 M108 76L74 42\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 18,
+    "name": "Partner arches",
+    "family": "Agreement & trust",
+    "description": "Partner arches: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M18 100V56A26 26 0 0 1 52 31 M110 100V56A26 26 0 0 0 76 31 M44 100V64Q64 42 84 64V100\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 19,
+    "name": "Commitment fold",
+    "family": "Agreement & trust",
+    "description": "Commitment fold: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M20 28H64L108 64 64 100H20L54 64Z M64 28V100 M84 46L64 64 84 82\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 20,
+    "name": "Two to one",
+    "family": "Agreement & trust",
+    "description": "Two to one: two sides meeting around a shared commercial commitment.",
+    "body": "<path d=\"M20 24H48V52H20Z M80 24H108V52H80Z M34 52V72H94V52 M64 72V108 M50 94L64 108 78 94\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 21,
+    "name": "Next horizon",
+    "family": "Growth & momentum",
+    "description": "Next horizon: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M20 102H110 M26 86L52 60 72 72 106 30 M82 30H106V54\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 22,
+    "name": "Rising steps",
+    "family": "Growth & momentum",
+    "description": "Rising steps: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M20 104V78H48V52H76V26H108 M38 104H108V44\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 23,
+    "name": "Growth leaf",
+    "family": "Growth & momentum",
+    "description": "Growth leaf: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M26 102Q18 36 100 22Q112 98 26 102Z M26 102L82 46 M54 72V46 M54 72H80\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 24,
+    "name": "Opportunity bloom",
+    "family": "Growth & momentum",
+    "description": "Opportunity bloom: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M64 106V62 M64 62Q18 62 22 24Q64 22 64 62Z M64 78Q110 78 106 40Q66 38 64 78Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 25,
+    "name": "Upward wings",
+    "family": "Growth & momentum",
+    "description": "Upward wings: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M18 84L56 28 56 58 30 100Z M72 28L110 84 98 100 72 58Z M56 74H72V110H56Z\" fill=\"currentColor\" stroke=\"none\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 26,
+    "name": "Growth bars",
+    "family": "Growth & momentum",
+    "description": "Growth bars: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M20 76H42V108H20Z M52 50H74V108H52Z M84 20H108V108H84Z\" fill=\"currentColor\" stroke=\"none\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 27,
+    "name": "Rising ribbon",
+    "family": "Growth & momentum",
+    "description": "Rising ribbon: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M22 98L50 70 36 56 70 22 106 58 72 92 58 78 30 106 M70 44L84 58 72 70\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 28,
+    "name": "Momentum arc",
+    "family": "Growth & momentum",
+    "description": "Momentum arc: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M20 100A82 82 0 0 1 102 18 M78 18H104V44 M20 74A54 54 0 0 1 74 20 M20 106H108\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 29,
+    "name": "Climb together",
+    "family": "Growth & momentum",
+    "description": "Climb together: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M20 100L46 60 64 84 94 28 M74 28H96V50 M20 74L42 38 60 60 86 20\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 30,
+    "name": "Ascending chevrons",
+    "family": "Growth & momentum",
+    "description": "Ascending chevrons: commercial progress expressed through an optimistic rising silhouette.",
+    "body": "<path d=\"M22 94L64 66 106 94 M22 66L64 38 106 66 M40 36L64 20 88 36\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 31,
+    "name": "Relationship pair",
+    "family": "People & relationships",
+    "description": "Relationship pair: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M28 36A14 14 0 1 0 56 36A14 14 0 1 0 28 36 M72 36A14 14 0 1 0 100 36A14 14 0 1 0 72 36 M18 104V84Q42 60 64 84Q86 60 110 84V104\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 32,
+    "name": "Shared table",
+    "family": "People & relationships",
+    "description": "Shared table: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M44 28A20 10 0 1 0 84 28A20 10 0 1 0 44 28 M44 100A20 10 0 1 0 84 100A20 10 0 1 0 44 100 M20 54H108V74H20Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 33,
+    "name": "Contact orbit",
+    "family": "People & relationships",
+    "description": "Contact orbit: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M50 52A14 14 0 1 0 78 52A14 14 0 1 0 50 52 M40 92Q64 66 88 92 M24 38Q64 0 104 38 M24 90Q64 128 104 90\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  },
+  {
+    "id": 34,
+    "name": "Warm introduction",
+    "family": "People & relationships",
+    "description": "Warm introduction: contacts and companies joined through simple human forms.",
+    "body": "<path d=\"M20 46H50V84H20Z M78 46H108V84H78Z M50 64H78 M54 26L64 16 74 26 M54 102L64 112 74 102\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"
+  }
+]
