@@ -37,5 +37,5 @@ with tempfile.TemporaryDirectory(prefix="dealcontext-launcher-") as directory:
     result = subprocess.run([str(copied), "demo-contacts", "sync"], cwd=directory,
                             env=env, capture_output=True, text=True, timeout=180)
     assert result.returncode == 2, result.stderr
-    assert '--config' in result.stderr
+    assert '--dry-run' in result.stderr
 print("PASS: packaged schema and copied uv launcher with local package override")

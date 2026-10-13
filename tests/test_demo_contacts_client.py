@@ -36,12 +36,40 @@ class Validation(unittest.TestCase):
                 self.assertIn('dealcontext demo-contacts', output.getvalue())
             for arguments in (['demo-contacts'], ['demo-contacts', 'sync'],
                               ['demo-contacts', 'sync', '--config', '/missing'],
-                              ['demo-contacts', 'sync', '--dry-run'],
                               ['demo-contacts', 'sync', '--config', '/missing', '--dry-run', '--apply']):
                 with contextlib.redirect_stderr(io.StringIO()):
                     with self.assertRaises(SystemExit) as result:
                         cli.parse(arguments)
                 self.assertEqual(result.exception.code, 2)
+
+    def test_default_config_override_and_status(self):
+        with tempfile.TemporaryDirectory() as home, patch.dict(os.environ, {
+                'HOME': home, 'XDG_CONFIG_HOME': '/ignored',
+                'DEALCONTEXT_DEMO_CONTACTS_CONFIG': 'ignored'}), \
+             patch.object(cli, 'config', return_value={}), \
+             patch.object(cli, 'skill_advisory'), \
+             patch.object(cli, 'say'), \
+             patch.object(sync, 'synchronize', return_value={}), \
+             patch.object(sync, 'latest_runs', return_value={}):
+            default = Path(home) / '.config/dealcontext/demo-contacts.json'
+            default.parent.mkdir(parents=True)
+            default.write_text(json.dumps({'version': 1, 'sources': [{
+                'source': 'vaultcontext-demo', 'url': 'http://127.0.0.1:18781',
+                'token': 'x' * 43}]}))
+            default.chmod(0o600)
+            self.assertEqual(sync.run(cli.parse(['demo-contacts', 'sync', '--dry-run'])), 0)
+            with self.assertRaises(cli.Fail):
+                sync.run(cli.parse(['demo-contacts', 'sync', '--config', str(default.parent / 'missing'), '--dry-run']))
+            default.chmod(0o644)
+            with self.assertRaises(cli.Fail):
+                sync.run(cli.parse(['demo-contacts', 'sync', '--dry-run']))
+            override = Path(home) / 'override.json'
+            default.rename(override)
+            override.chmod(0o600)
+            self.assertEqual(sync.run(cli.parse(['demo-contacts', 'sync', '--config', str(override), '--dry-run'])), 0)
+            with self.assertRaises(cli.Fail):
+                sync.run(cli.parse(['demo-contacts', 'sync', '--dry-run']))
+            self.assertEqual(sync.run(cli.parse(['demo-contacts', 'status'])), 0)
 
     def test_unknown_fields_and_incomplete_exports_fail(self):
         good = snapshot()

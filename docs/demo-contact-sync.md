@@ -24,9 +24,9 @@ operator credentials for an import. A dedicated ordinary CRM account improves
 attribution but retains the CRM's existing shared permissions.
 
 Each source requires its own read-only export credential. The contact service
-stores a SHA-256 verifier; the CLI holds the bearer secret in an explicitly named,
+stores a SHA-256 verifier; the CLI holds the bearer secret in an
 owner-only regular JSON file. Do not use the backend's mutation-capable token.
-Create a private configuration outside Git with mode 0600, for example:
+Create `~/.config/dealcontext/demo-contacts.json` outside Git with mode 0600, for example:
 
 ```json
 {
@@ -69,10 +69,14 @@ integration. CRM sync-run and mutation audit records persist independently.
 With both source tunnels available:
 
 ```sh
-dealcontext demo-contacts sync --config /absolute/private/demo-contacts.json --dry-run
-dealcontext demo-contacts sync --config /absolute/private/demo-contacts.json --apply
+dealcontext demo-contacts sync --dry-run
+dealcontext demo-contacts sync --apply
 dealcontext demo-contacts status
 ```
+
+The default configuration is `~/.config/dealcontext/demo-contacts.json`, independent
+of the working directory. Use `--config /absolute/private/other.json` to override
+it. Demo export configuration is not read from environment variables.
 
 Add `--source vaultcontext-demo` or `--source wikicontext-demo` to select one source.
 The sync default is every configured source; status defaults to both sources and

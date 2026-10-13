@@ -12,6 +12,7 @@ import urllib.request
 
 from . import cli
 
+DEFAULT_CONFIG = '~/.config/dealcontext/demo-contacts.json'
 SOURCES = ('vaultcontext-demo', 'wikicontext-demo')
 MAX_BYTES = 16 * 1024 * 1024
 FIELDS = {
@@ -31,7 +32,7 @@ def fail(message, code=1):
 
 
 def load_config(filename):
-    """Secrets are read only from the explicitly selected private regular file."""
+    """Secrets are read only from the selected private regular file."""
     try:
         fd = os.open(filename, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
         with os.fdopen(fd, 'rb') as handle:
@@ -307,7 +308,8 @@ def add_parser(parent_commands, pretty):
         description='Manually reconcile demo contact snapshots into DealContext. Never sends messages.')
     commands = parser.add_subparsers(dest='demo_command', required=True)
     sync = commands.add_parser('sync', parents=[pretty], help='preview or apply fresh source snapshots')
-    sync.add_argument('--config', required=True, help='explicit owner-only JSON file containing demo URLs and export tokens')
+    sync.add_argument('--config', default=DEFAULT_CONFIG,
+        help=f'owner-only JSON file containing demo URLs and export tokens (default: {DEFAULT_CONFIG})')
     mode = sync.add_mutually_exclusive_group(required=True)
     mode.add_argument('--dry-run', action='store_true')
     mode.add_argument('--apply', action='store_true')
@@ -317,7 +319,7 @@ def add_parser(parent_commands, pretty):
 
 
 def run(args):
-    sources = load_config(args.config) if args.demo_command == 'sync' else []
+    sources = load_config(os.path.expanduser(args.config)) if args.demo_command == 'sync' else []
     if args.demo_command == 'sync' and args.source:
         sources = [source for source in sources if source['source'] == args.source]
         if not sources:
