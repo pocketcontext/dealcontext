@@ -2,7 +2,6 @@
 """OAuth client protocol tests with a real loopback callback and mocked PocketBase."""
 import base64
 import hashlib
-import importlib.util
 import json
 import os
 from pathlib import Path
@@ -16,9 +15,7 @@ import urllib.parse
 import urllib.request
 from unittest.mock import patch
 
-spec = importlib.util.spec_from_file_location('tc', Path(__file__).resolve().parents[1] / 'src/dealcontext_client/cli.py')
-tc = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(tc)
+from dealcontext_client import cli as tc
 
 
 class OAuthTest(unittest.TestCase):

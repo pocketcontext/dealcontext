@@ -1,7 +1,10 @@
 {
   "authCollection": "agents",
   "tables": {
-    "agent_directory": ["id", "name"],
+    "agent_directory": [
+      "id",
+      "name"
+    ],
     "organizations": [],
     "people": [],
     "pipelines": [],
@@ -12,7 +15,12 @@
     "messages": [],
     "outreach_links": [],
     "enquiries": [],
-    "audit_log": []
+    "audit_log": [],
+    "demo_contacts": [],
+    "demo_consent_events": [],
+    "demo_suppressions": [],
+    "demo_review_events": [],
+    "demo_sync_runs": []
   },
   "timeoutMs": 2000,
   "maxRows": 500,

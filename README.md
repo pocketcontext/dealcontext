@@ -4,6 +4,12 @@ Current release controls and platform coverage: [common CI and deployment contra
 
 A sales CRM operated through a coding agent. Contacts, pipelines, deals, activities, messages, and notes live in PocketBase. Agents read context with SQL and write records through the normal PocketBase REST API. An authenticated read-only CRM reader is available at `/`. A website can post its contact form to a [public enquiry endpoint](#public-enquiry-form); agents triage what arrives.
 
+The manually operated `dealcontext demo-contacts` command imports private contact, consent,
+suppression and review snapshots from VaultContext Demo and WikiContext Demo into
+separate CRM source collections. It links existing people without creating people,
+deals or messages. See [manual demo contact synchronization](docs/demo-contact-sync.md)
+for installation, private export credentials, dry runs and interruption recovery.
+
 [PocketContext](https://github.com/pocketcontext/pocketcontext) supplies the server and restricted SQL endpoints. This repository supplies the CRM schema, configuration, workflow tests, and an installable agent skill in [skills/dealcontext](skills/dealcontext/SKILL.md) that holds the agent instructions and a small command-line client.
 
 ## Run locally

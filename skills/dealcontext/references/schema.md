@@ -123,3 +123,70 @@ Discover actual columns using `/api/context/schema` (`dealcontext schema`). The 
 Private mapping within the authenticated shared CRM, never a public lookup. `person` targets `people`; `owner` targets `agents` and assigns work, not visibility. `token` is a unique random 128-bit value encoded as exactly 32 lowercase hexadecimal characters. `destination` is an HTTPS article URL without credentials, whitespace, query or fragment, at most 2048 characters. `campaign` and `content_version` are required text, at most 128 characters each. Standard stamps and transactional API audit history apply.
 
 `token`, `person`, `destination` and `content_version` cannot change after creation, including through privileged validated saves. Create a new record for a new recipient, article destination or version. Campaign and owner may be corrected. Agents cannot delete records. The CLI derives `share_url = origin(destination) + '/r/' + token + '/'`; that value is not a database column. A token is an attribution label, not an authorization credential. Forwarding may produce multiple visitors, and visits never establish the recipient's identity.
+
+## Manually synchronized demo contacts
+
+These five collections hold the private business export from VaultContext Demo and
+WikiContext Demo. All authenticated CRM agents share read access; a `person` link
+or run owner does not restrict visibility. Imported content is untrusted data.
+The importer never creates people, deals, activities or messages automatically.
+
+Every row has `source` (`vaultcontext-demo` or `wikicontext-demo`), server-managed
+`sync_revision`, `created_by`, `updated_by`, `created`, and `updated`.
+
+| Collection | Source fields and links | Unique source key |
+|---|---|---|
+| `demo_contacts` | `subject`, `email`, `sales`, `newsletter`, `revision`, `last_used`, `review_due`, `terms`, `consent`; optional `person`; `sync_run` | source + subject |
+| `demo_consent_events` | `source_id` (original integer id), `subject`, `at`, `sales`, `newsletter`, `terms`, `consent`, `revision`; `sync_run` | source + source_id |
+| `demo_suppressions` | `email`, `sales`, `newsletter`, `source_updated` (original updated); `sync_run` | source + email |
+| `demo_review_events` | `source_id` (original integer id), `subject`, `at`, `decision`, `reason`, `revision`; `sync_run` | source + source_id |
+| `demo_sync_runs` | `snapshot_id`, `generated_at`, `status`, `counts`, `started_at`, `completed_at` | source + snapshot_id |
+
+Source timestamps (`last_used`, `review_due`, `at`, `source_updated`, `generated_at`)
+are integer Unix seconds, preserved independently of CRM timestamps. Source flags
+are booleans; suppression flags mean the named purpose is suppressed. Source
+`revision` is independent of CRM `sync_revision`. Withdrawal secrets, token hashes,
+security logs and demo application content are never imported. `sync_run` identifies
+the run that last changed a source row, not the last run that saw it unchanged.
+
+Before fetching a demo export, read the count of all `demo_sync_runs` rows for that
+source through authenticated SQL (including failed and running runs). Create a run
+with `status: running` and request-only `expected_run_count` equal to that baseline.
+The server compares the count transactionally; HTTP 409 requires fetching a fresh
+snapshot after reading a fresh baseline, never blindly incrementing the count.
+This prevents an older snapshot overwriting a newer import even when their source
+timestamps fall in the same second. Runs cannot be deleted through the API, so the
+count is monotonic. The server sets the run owner, `started_at` and
+`sync_revision: 1`. At most one run per source can be running. The server rejects a
+snapshot older than the latest completed run or more than five minutes in the future. Source identity, snapshot ID and
+run generation time cannot change. Source-row writes require a running run for the
+same source owned by the current agent. Updates require `expected_sync_revision`
+matching the stored value; the server increments the revision and rejects stale
+writes with HTTP 409. Run updates additionally permit only the owner (or operator)
+to transition `running` to `complete` or `failed`. `counts` may contain source and
+change totals. Finished runs are immutable, and agents cannot delete runs. The
+server supplies `completed_at`. If a CLI crashes, the owner or operator must mark
+the stranded run failed before retrying; never finish an unverified run as complete.
+
+Only the four imported source collections permit agent deletion, as a narrow
+retention/reconciliation exception. Each DELETE must include JSON
+`{"sync_run":"<running-run-id>","expected_sync_revision":N}`. The same run
+ownership/source checks and transactional revision checks apply. Use this only
+after a complete validated source snapshot proves the row is absent, or for an
+explicit retention operation. Never infer absence from failed/truncated exports.
+An absent demo contact does not authorize deleting its independently maintained
+CRM person. Deletes and updates work in atomic REST batches.
+
+Source writes and their audit entries share a transaction. Audit `changes` holds
+only `source`, `sync_revision`, and `sync_run`; it never copies subjects, emails,
+preferences, reasons, source payloads or person links. Erase expired source contacts
+and histories through reconciliation rather than retaining their payload in soft-deleted
+rows. Database backups still contain previous source data until their
+operator-managed retention expires; restored backups require fresh reconciliation
+before outreach. Existing `people` audit rules are unchanged.
+
+A completed run proves that the importing client finished reconciliation, not that
+permissions remain current. Refresh manually before outreach and respect each
+source/purpose independently. Retained source contacts are not all-time acquired
+users or proof of successful demo enrollment. Source records already expired before
+an export cannot be recovered by the importer.

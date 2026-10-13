@@ -34,7 +34,7 @@ ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 TIMEOUT = 30
 USER_AGENT = 'DealContext/1.0'
 # Bump with the server recommendation when installed skill behavior or guidance changes.
-SKILL_REVISION = 4
+SKILL_REVISION = 5
 SKILL_CHECK_TTL = 300
 SKILL_VERSION_PATH = '/api/dealcontext/skill-version'
 hidden = []  # The password and tokens. say() masks them in everything it prints.
@@ -510,6 +510,9 @@ def write_outreach_manifest(path, rows):
 
 
 def run(args):
+    if args.command == 'demo-contacts':
+        from . import demo_contacts
+        return demo_contacts.run(args)
     if args.command == 'newid':
         print(''.join(secrets.choice(ID_ALPHABET) for _ in range(15)))
         return 0
@@ -625,9 +628,11 @@ def run(args):
 def parse(argv):
     pretty = argparse.ArgumentParser(add_help=False)
     pretty.add_argument('--pretty', action='store_true', default=argparse.SUPPRESS, help='indent the JSON output')
-    parser = argparse.ArgumentParser(prog='dealcontext', parents=[pretty], description='DealContext CRM client. Reads with SQL, writes through the records API. There is no delete command: agents cannot delete records.',
+    parser = argparse.ArgumentParser(prog='dealcontext', parents=[pretty], description='DealContext CRM client. Reads with SQL, writes through the records API. No general delete command; demo synchronization can reconcile imported source rows.',
                                      epilog='Environment: ' + ', '.join(ENV) + '. JSON arguments may be "-" to read standard input. Exit codes: 0 ok, 1 HTTP or transport error, 2 usage or configuration, 3 check found differences, 4 HTTP 409.')
     commands = parser.add_subparsers(dest='command', required=True, metavar='command')
+    from . import demo_contacts
+    demo_contacts.add_parser(commands, pretty)
     def add(name, text, *arguments):
         command = commands.add_parser(name, parents=[pretty], help=text, description=text)
         for argument, argument_help in arguments:

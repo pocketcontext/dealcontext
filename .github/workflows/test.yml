@@ -19,7 +19,7 @@ jobs:
       - name: Install packaged CLI
         run: |
           python3 -m venv "$RUNNER_TEMP/context-client"
-          "$RUNNER_TEMP/context-client/bin/pip" install ./dealcontext
+          "$RUNNER_TEMP/context-client/bin/pip" install ./dealcontext uv==0.12.23
           echo "$RUNNER_TEMP/context-client/bin" >> "$GITHUB_PATH"
       - name: Test deployment orchestration
         run: python3 dealcontext/tests/deploy_workflow.py
@@ -48,6 +48,10 @@ jobs:
         run: CGO_ENABLED=1 go build -tags sqlite_math_functions -o bin/pocketcontext ./cmd/pocketcontext
       - name: Test CRM
         run: python3 dealcontext/tests/integration.py --binary pocketcontext/bin/pocketcontext
+      - name: Test manual demo import boundary and lifecycle
+        run: |
+          python3 -m unittest discover -s dealcontext/tests -p test_demo_contacts_client.py
+          python3 dealcontext/tests/demo_sync_model.py --binary pocketcontext/bin/pocketcontext
       - name: Test skill
         run: python3 dealcontext/tests/skill.py --binary pocketcontext/bin/pocketcontext
       - name: Test deployment hooks
