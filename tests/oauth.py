@@ -13,7 +13,7 @@ import unittest
 import urllib.error
 import urllib.parse
 import urllib.request
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from dealcontext_client import cli as tc
 
@@ -33,8 +33,9 @@ class OAuthTest(unittest.TestCase):
             sock.bind(('127.0.0.1', 0))
             self.port = sock.getsockname()[1]
 
-    def flow(self, callback='success', auth=None, exchange_status=200, auth_url=None):
+    def flow(self, callback='success', auth=None, exchange_status=200, auth_url=None, open_browser=True, opener=None):
         captured, errors, threads, calls = {}, [], [], []
+        self.messages, self.opener = [], opener or MagicMock(return_value=True)
         def browser(url):
             try:
                 query = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
@@ -63,6 +64,7 @@ class OAuthTest(unittest.TestCase):
             except Exception as error:
                 errors.append(error)
         def say(message, *args):
+            self.messages.append(message)
             if message.startswith('Open this URL'):
                 thread = threading.Thread(target=browser, args=(message.split('\n')[1],))
                 threads.append(thread)
@@ -82,8 +84,10 @@ class OAuthTest(unittest.TestCase):
             self.assertNotIn('createData', body)
             return exchange_status, self.auth if auth is None else auth
         try:
-            with patch.object(tc, 'send', side_effect=send), patch.object(tc, 'say', side_effect=say):
-                result = tc.google_login(self.cfg, self.port, 1)
+            # Tests never open a real browser; the callback is driven from the printed URL.
+            with (patch.object(tc, 'send', side_effect=send), patch.object(tc, 'say', side_effect=say),
+                  patch.object(tc.webbrowser, 'open', self.opener)):
+                result = tc.google_login(self.cfg, self.port, 1, open_browser)
         finally:
             for thread in threads:
                 thread.join(3)
@@ -105,6 +109,36 @@ class OAuthTest(unittest.TestCase):
         self.assertNotIn('authorization-secret', path.read_text())
         self.assertNotIn('password', path.read_text())
         self.assertEqual(len(calls), 2)
+
+    def printed_url(self):
+        return next(m for m in self.messages if m.startswith('Open this URL')).split('\n')[1]
+
+    def test_browser_opened_when_allowed(self):
+        with patch.dict(os.environ, {'DISPLAY': ':0'}):
+            for name in ('SSH_CONNECTION', 'SSH_TTY'):
+                os.environ.pop(name, None)
+            self.assertEqual(self.flow()[0]['method'], 'google')
+        self.opener.assert_called_once_with(self.printed_url())
+        self.assertIn('Opened the URL in your default browser.', self.messages)
+        self.assertIn('Waiting up to 1 seconds for sign-in to complete.', self.messages)
+        self.assertEqual(sum(self.printed_url() in m for m in self.messages), 1)
+
+    def test_browser_skipped_with_no_browser_or_ssh(self):
+        for env, flag, reason in (({}, False, '--no-browser'), ({'SSH_CONNECTION': '192.0.2.1 50000 192.0.2.2 22'}, True, 'SSH session'),
+                                  ({'SSH_TTY': '/dev/pts/0'}, True, 'SSH session')):
+            with self.subTest(reason=reason, env=env), patch.dict(os.environ, {'DISPLAY': ':0', **env}):
+                self.assertEqual(self.flow(open_browser=flag)[0]['method'], 'google')
+                self.opener.assert_not_called()
+                self.assertIn(f'Browser not opened ({reason}); open the URL above in your browser.', self.messages)
+
+    def test_login_proceeds_when_browser_unavailable(self):
+        for opener in (MagicMock(return_value=False), MagicMock(side_effect=RuntimeError('no runnable browser'))):
+            with self.subTest(opener=opener), patch.dict(os.environ, {'DISPLAY': ':0'}):
+                for name in ('SSH_CONNECTION', 'SSH_TTY'):
+                    os.environ.pop(name, None)
+                self.assertEqual(self.flow(opener=opener)[0]['method'], 'google')
+                opener.assert_called_once()
+                self.assertIn('Browser not opened (no browser available); open the URL above in your browser.', self.messages)
 
     def test_denial_and_state_mismatch_never_exchange_or_cache(self):
         for callback in ('denied', 'wrong_state', 'timeout'):
@@ -196,7 +230,8 @@ class OAuthTest(unittest.TestCase):
             os.environ.pop('DEALCONTEXT_AGENT_PASSWORD', None)
             self.assertIsNone(tc.config()['password'])
         args = tc.parse(['login', '--google'])
-        self.assertEqual(args.port, 8765)
+        self.assertEqual((args.port, args.timeout, args.no_browser), (8765, 180, False))
+        self.assertTrue(tc.parse(['login', '--google', '--no-browser']).no_browser)
 
 
 if __name__ == '__main__':

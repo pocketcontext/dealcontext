@@ -26,6 +26,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import webbrowser
 
 ENV = ['DEALCONTEXT_URL', 'DEALCONTEXT_AGENT_EMAIL', 'DEALCONTEXT_AGENT_PASSWORD']
 SCHEMA_FILE = files('dealcontext_client').joinpath('schema.json')
@@ -190,7 +191,7 @@ def oauth_refresh_needed(session):
         return True
 
 
-def google_login(cfg, port=8765, timeout=180):
+def google_login(cfg, port=8765, timeout=180, open_browser=True):
     if not 1 <= port <= 65535 or not 1 <= timeout <= 600:
         raise Fail(2, 'OAuth port must be 1–65535 and timeout must be 1–600 seconds')
     status, data = oauth_send(cfg, 'GET', '/api/collections/agents/auth-methods')
@@ -262,6 +263,20 @@ def google_login(cfg, port=8765, timeout=180):
         server.timeout = 0.25
         say(f'For SSH, forward this port: ssh -L {port}:127.0.0.1:{port} user@ssh-host')
         say('Open this URL in your browser (keep it private):\n' + url)
+        if not open_browser:
+            reason = '--no-browser'
+        elif os.environ.get('SSH_CONNECTION') or os.environ.get('SSH_TTY'):
+            reason = 'SSH session'
+        elif sys.platform not in ('darwin', 'win32') and not (os.environ.get('DISPLAY') or os.environ.get('WAYLAND_DISPLAY')):
+            reason = 'no graphical display'  # Avoid console browsers taking over the terminal.
+        else:
+            try:
+                reason = None if webbrowser.open(url) else 'no browser available'
+            except Exception:
+                reason = 'no browser available'
+        say('Opened the URL in your default browser.' if reason is None
+            else f'Browser not opened ({reason}); open the URL above in your browser.')
+        say(f'Waiting up to {timeout} seconds for sign-in to complete.')
         deadline = time.monotonic() + timeout
         while not outcome and time.monotonic() < deadline:
             server.handle_request()
@@ -525,7 +540,7 @@ def run(args):
         return 0
     cfg = config()
     if args.command == 'login':
-        google_login(cfg, args.port, args.timeout)
+        google_login(cfg, args.port, args.timeout, not args.no_browser)
         say(f'Signed in as {cfg["email"]} at {cfg["url"]}', sys.stdout)
         return 0
     # Reject malformed writes before authentication or any network request.
@@ -641,6 +656,7 @@ def parse(argv):
     oauth_login.add_argument('--google', action='store_true', required=True)
     oauth_login.add_argument('--port', type=int, default=8765, help='loopback callback port; register the matching redirect URI')
     oauth_login.add_argument('--timeout', type=int, default=180, help='seconds to wait for the browser (1–600)')
+    oauth_login.add_argument('--no-browser', action='store_true', help='print the sign-in URL without opening a browser (use over SSH)')
     add('whoami', 'print the agent id, name, and server URL; the id is the value for `owner`')
     add('check', 'compare the live schema with references/schema.json; exit 3 when they differ')
     add('schema', 'print the live SQL tables and columns')
