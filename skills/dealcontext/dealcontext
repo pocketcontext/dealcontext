@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["dealcontext-client @ git+https://github.com/pocketcontext/dealcontext.git@6d35cc481d2d7ce3ee4351d100bee50ae2b41a09"]
+# dependencies = ["dealcontext-client @ git+https://github.com/pocketcontext/dealcontext.git@4004ecabb1e512060a66696387b99f4e7be80141"]
 # ///
 from dealcontext_client.cli import main
 
