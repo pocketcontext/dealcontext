@@ -243,7 +243,7 @@ def version_checks(dc, tmp, installed, tokens):
     thread.start()
     base = f'http://127.0.0.1:{stub.server_port}'
     cache = tmp / 'version-cache'
-    options = {'DEALCONTEXT_URL': base, 'XDG_CACHE_HOME': str(cache)}
+    options = {'DEALCONTEXT_URL': base, 'XDG_CACHE_HOME': str(cache), 'XDG_STATE_HOME': str(tmp / 'version-state')}
     SkillVersion.schema = json.loads((installed / 'references' / 'schema.json').read_text())
     tokens.add(SkillVersion.token)
 
@@ -337,12 +337,13 @@ def version_checks(dc, tmp, installed, tokens):
         with item('newid and logout do not request metadata; logout clears both caches'):
             SkillVersion.status, SkillVersion.metadata = 200, {'recommendedRevision': SKILL_REVISION}
             query()
-            assert path.exists()
+            assert path.exists() and (tmp / 'version-state' / 'dealcontext' / path.name.replace('.skill-version.json', '.json')).exists()
             before = calls()
             dc('newid', **options)
             dc('logout', **{**options, 'DEALCONTEXT_AGENT_PASSWORD': None})
             assert calls() == before and not path.exists()
-            assert not path.with_name(path.name.replace('.skill-version.json', '.json')).exists()
+            session = tmp / 'version-state' / 'dealcontext' / path.name.replace('.skill-version.json', '.json')
+            assert not session.exists() and not path.with_name(session.name).exists(), 'logout removes the session'
     finally:
         stub.shutdown()
         stub.server_close()
@@ -364,11 +365,11 @@ def main():
         installed = tmp / 'installed' / 'dealcontext'
         shutil.copytree(SKILL, installed, ignore=shutil.ignore_patterns('__pycache__'))
         shutil.copytree(ROOT / 'src/dealcontext_client', installed / 'dealcontext_client', ignore=shutil.ignore_patterns('__pycache__'))
-        environment = {'PYTHONDONTWRITEBYTECODE': '1', 'PATH': os.environ.get('PATH', ''), 'HOME': str(tmp / 'home'), 'XDG_CACHE_HOME': str(tmp / 'cache'),
+        environment = {'PYTHONDONTWRITEBYTECODE': '1', 'PATH': os.environ.get('PATH', ''), 'HOME': str(tmp / 'home'), 'XDG_CACHE_HOME': str(tmp / 'cache'), 'XDG_STATE_HOME': str(tmp / 'state'),
                        'UV_PYTHON': sys.executable, 'UV_CACHE_DIR': str(tmp / 'uv-cache'), 'DEALCONTEXT_URL': base, 'DEALCONTEXT_AGENT_EMAIL': EMAIL, 'DEALCONTEXT_AGENT_PASSWORD': PASSWORD}
         (tmp / 'home').mkdir()
         (tmp / 'elsewhere').mkdir()
-        cache = tmp / 'cache' / 'dealcontext'
+        cache = tmp / 'state' / 'dealcontext'
         outputs, tokens = [], set()
 
         def dc(*argv, expect=0, stdin=None, **overrides):
@@ -421,18 +422,19 @@ def main():
         with item('whoami prints the agent id, name, and server URL'):
             me = out('whoami')
             assert me['id'] == agent['id'] and me['name'] == 'Skill agent' and me['url'] == base, me
-        with item('token cache: one file, mode 0600, directory 0700, under XDG_CACHE_HOME'):
+        with item('session file: one file, mode 0600, directory 0700, under XDG_STATE_HOME, nothing in the cache'):
             (session_file,) = session_files()
             assert stat.S_IMODE(session_file.stat().st_mode) == 0o600 and stat.S_IMODE(cache.stat().st_mode) == 0o700
             assert PASSWORD not in session_file.read_text()
-            assert not (tmp / 'home' / '.cache').exists()
-        with item('token cache is reused: a second call works with a wrong password, so it did not log in'):
+            assert not (tmp / 'home' / '.cache').exists() and not (tmp / 'home' / '.local').exists()
+            assert all(path.name.endswith('.skill-version.json') for path in (tmp / 'cache').glob('dealcontext/*.json'))
+        with item('session is reused: a second call works with a wrong password, so it did not log in'):
             before = session_file.read_text()
             assert out('whoami', DEALCONTEXT_AGENT_PASSWORD='wrong-password')['id'] == agent['id']
             assert session_file.read_text() == before
-        with item('without XDG_CACHE_HOME the cache is under ~/.cache/dealcontext'):
-            out('whoami', XDG_CACHE_HOME=None)
-            (home_file,) = (path for path in (tmp / 'home' / '.cache' / 'dealcontext').glob('*.json') if not path.name.endswith('.skill-version.json'))
+        with item('without XDG_STATE_HOME the session is under ~/.local/state/dealcontext'):
+            out('whoami', XDG_STATE_HOME=None)
+            (home_file,) = (tmp / 'home' / '.local' / 'state' / 'dealcontext').glob('*.json')
             assert stat.S_IMODE(home_file.stat().st_mode) == 0o600
             tokens.add(json.loads(home_file.read_text())['token'])
         with item('check exits 0 against a server built from the current migrations. ' + REGENERATE):
@@ -523,7 +525,7 @@ def main():
             assert stdout == '' and 'HTTP 400' in err and 'At least one of deal, person, organization' in err, err
             _, err = dc('sql', 'SELECT id FROM agents', expect=1)
             assert 'HTTP 400' in err, err
-            _, err = dc('whoami', expect=1, DEALCONTEXT_URL='http://127.0.0.1:1', XDG_CACHE_HOME=str(tmp / 'cache-unreachable'))
+            _, err = dc('whoami', expect=1, DEALCONTEXT_URL='http://127.0.0.1:1', XDG_CACHE_HOME=str(tmp / 'cache-unreachable'), XDG_STATE_HOME=str(tmp / 'state-unreachable'))
             assert 'cannot reach' in err, err
         with item('sql: NULL stays null, an empty string stays empty, stdin works'):
             result = out('sql', "SELECT NULL AS missing, '' AS empty, name FROM organizations WHERE id = '" + org['id'] + "'")
@@ -564,7 +566,7 @@ def main():
             tokens.add(token)
             return not token.startswith('expired.')
         with item('expired metadata plus rejected token refreshes authentication and continues the command'):
-            version_file = session_file.with_suffix('.skill-version.json')
+            version_file = tmp / 'cache' / 'dealcontext' / session_file.with_suffix('.skill-version.json').name
             metadata = json.loads(version_file.read_text())
             metadata['checkedAt'] = 0
             version_file.write_text(json.dumps(metadata))
@@ -600,7 +602,7 @@ def main():
             thread.start()
             try:
                 stub_url = f'http://127.0.0.1:{stub.server_port}'
-                result = out('sql', 'SELECT 1', DEALCONTEXT_URL=stub_url, XDG_CACHE_HOME=str(tmp / 'identity-cache'))
+                result = out('sql', 'SELECT 1', DEALCONTEXT_URL=stub_url, XDG_CACHE_HOME=str(tmp / 'identity-cache'), XDG_STATE_HOME=str(tmp / 'identity-state'))
                 assert result['rows'] == [[1]], result
                 assert ClientIdentityGate.requests == [
                     ('/api/collections/agents/auth-with-password', 'DealContext/1.0', None),
@@ -639,7 +641,7 @@ def main():
             for number, text in enumerate(outputs):
                 assert PASSWORD not in text and not [token for token in tokens if token in text], f'secret in the output of dealcontext call number {number}'
         print('PASS: skill files, links, frontmatter, no operator credentials; dealcontext from a copy outside the repository: configuration errors, '
-              'whoami, token cache mode and reuse, advisory skill revisions and cache isolation, check against the live schema, schema, create, update, get, stamp removal, HTTP errors, '
+              'whoami, session file mode, location and reuse, advisory skill revisions and cache isolation, check against the live schema, schema, create, update, get, stamp removal, HTTP errors, '
               'SQL NULL and truncation warning, atomic batch success and failure, recovery from a rejected token, 409 exit code, logout, no secrets in output')
 
 

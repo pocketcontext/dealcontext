@@ -18,7 +18,7 @@ dealcontext check
 ```
 
 The destination uses ordinary `DEALCONTEXT_URL` and `DEALCONTEXT_AGENT_EMAIL`
-configuration and the DealContext client's existing authentication cache. Password
+configuration and the DealContext client's existing login session. Password
 authentication remains supported through `DEALCONTEXT_AGENT_PASSWORD`. Never use
 operator credentials for an import. A dedicated ordinary CRM account improves
 attribution but retains the CRM's existing shared permissions.

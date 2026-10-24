@@ -81,7 +81,7 @@ def main():
                 {'name': name, 'email': email, 'owner': agent['id']}, token))
         env = {key: value for key, value in os.environ.items()
                if not key.startswith(('DEALCONTEXT_', 'OBSERVECONTEXT_', 'POCKETCONTEXT_'))}
-        env.update(HOME=str(tmp / 'home'), XDG_CACHE_HOME=str(tmp / 'cache'),
+        env.update(HOME=str(tmp / 'home'), XDG_CACHE_HOME=str(tmp / 'cache'), XDG_STATE_HOME=str(tmp / 'state'),
                    DEALCONTEXT_URL=base, DEALCONTEXT_AGENT_EMAIL=agent['email'],
                    DEALCONTEXT_AGENT_PASSWORD='SyntheticPassword123!')
         def command(*arguments, success=True):

@@ -22,8 +22,10 @@ class OAuthTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.env = patch.dict(os.environ, {'XDG_CACHE_HOME': self.tmp.name})
+        self.env = patch.dict(os.environ, {'XDG_CACHE_HOME': str(Path(self.tmp.name) / 'cache'),
+                                           'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state')})
         self.env.start()
+        os.environ.pop('DEALCONTEXT_SESSION_DIR', None)
         self.addCleanup(self.env.stop)
         self.cfg = {'url': 'https://tasks.example.com', 'email': 'member@example.com', 'password': 'unused-password'}
         self.record = {'collectionName': 'agents', 'id': 'user00000000001', 'email': self.cfg['email']}
@@ -102,13 +104,36 @@ class OAuthTest(unittest.TestCase):
     def test_success_private_cache_and_pkce(self):
         result, calls = self.flow()
         self.assertEqual(result['method'], 'google')
-        path = tc.cache_file(self.cfg)
+        path = tc.session_file(self.cfg)
         self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)
         self.assertNotIn('google-secret', path.read_text())
         self.assertNotIn('authorization-secret', path.read_text())
         self.assertNotIn('password', path.read_text())
         self.assertEqual(len(calls), 2)
+
+    def test_session_lives_in_state_not_cache(self):
+        tc.auth_session(self.cfg, self.auth, 'google')
+        self.assertEqual(tc.session_file(self.cfg).parent, Path(self.tmp.name) / 'state' / 'dealcontext')
+        self.assertFalse((Path(self.tmp.name) / 'cache').exists())
+        with patch.dict(os.environ, {'DEALCONTEXT_SESSION_DIR': str(Path(self.tmp.name) / 'override')}):
+            self.assertEqual(tc.session_file(self.cfg).parent, Path(self.tmp.name) / 'override')
+            self.assertIsNone(tc.load_session(self.cfg))
+
+    def test_legacy_cache_session_moved_once(self):
+        legacy = tc.legacy_session_file(self.cfg)
+        legacy.parent.mkdir(parents=True)
+        legacy.write_text(json.dumps({'url': self.cfg['url'], 'email': self.cfg['email'], 'token': 'legacy-secret'}))
+        self.assertEqual(tc.load_session(self.cfg)['token'], 'legacy-secret')
+        self.assertFalse(legacy.exists())
+        self.assertEqual(stat.S_IMODE(tc.session_file(self.cfg).stat().st_mode), 0o600)
+        self.assertEqual(tc.load_session(self.cfg)['token'], 'legacy-secret')
+        # A saved session wins over a stale legacy file, and logout removes both.
+        legacy.write_text(json.dumps({'url': self.cfg['url'], 'email': self.cfg['email'], 'token': 'stale-secret'}))
+        self.assertEqual(tc.load_session(self.cfg)['token'], 'legacy-secret')
+        with patch.dict(os.environ, {'DEALCONTEXT_URL': self.cfg['url'], 'DEALCONTEXT_AGENT_EMAIL': self.cfg['email']}):
+            tc.run(tc.parse(['logout']))
+        self.assertFalse(legacy.exists() or tc.session_file(self.cfg).exists())
 
     def printed_url(self):
         return next(m for m in self.messages if m.startswith('Open this URL')).split('\n')[1]
@@ -144,19 +169,19 @@ class OAuthTest(unittest.TestCase):
         for callback in ('denied', 'wrong_state', 'timeout'):
             with self.subTest(callback=callback), self.assertRaises(tc.Fail):
                 self.flow(callback)
-            self.assertFalse(tc.cache_file(self.cfg).exists())
+            self.assertFalse(tc.session_file(self.cfg).exists())
 
     def test_reject_unexpected_identity(self):
         for record in ({**self.record, 'email': 'other@example.com'}, {**self.record, 'collectionName': '_superusers'}):
             with self.subTest(record=record), self.assertRaisesRegex(tc.Fail, 'unexpected identity'):
                 self.flow(auth={'token': 'secret', 'record': record})
-            self.assertFalse(tc.cache_file(self.cfg).exists())
+            self.assertFalse(tc.session_file(self.cfg).exists())
 
     def test_exchange_error_does_not_expose_provider_response(self):
         with self.assertRaises(tc.Fail) as error:
             self.flow(exchange_status=400)
         self.assertNotIn('google-secret', str(error.exception))
-        self.assertFalse(tc.cache_file(self.cfg).exists())
+        self.assertFalse(tc.session_file(self.cfg).exists())
 
     def test_reject_non_google_authorization_url(self):
         for url in ('http://accounts.google.com/auth', 'https://evil.example/auth'):
@@ -210,7 +235,7 @@ class OAuthTest(unittest.TestCase):
         for token in (123, {'secret': 'value'}, ['secret']):
             with self.subTest(token=token), self.assertRaises(tc.Fail):
                 tc.auth_session(self.cfg, {**self.auth, 'token': token}, 'google')
-        self.assertFalse(tc.cache_file(self.cfg).exists())
+        self.assertFalse(tc.session_file(self.cfg).exists())
 
     def test_oauth_transport_error_is_sanitized(self):
         with patch.object(tc, 'send', side_effect=tc.Fail(1, 'redirect /?code=secret-code')):

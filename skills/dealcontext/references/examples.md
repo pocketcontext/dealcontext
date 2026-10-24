@@ -1,6 +1,6 @@
 # API examples
 
-Each example is shown as a `dealcontext` command and as the HTTP request it sends. `dealcontext` is `dealcontext` in this skill; it logs in with the three `DEALCONTEXT_` environment variables and caches the token. The HTTP examples assume `BASE_URL` is the server address and `TOKEN` is a token obtained from `POST /api/collections/agents/auth-with-password` with `{ "identity": "agent@example.com", "password": "..." }`. Never save real credentials in a file. Field names and rules are in [schema.md](schema.md); the order of steps is in [workflows.md](workflows.md).
+Each example is shown as a `dealcontext` command and as the HTTP request it sends. `dealcontext` is `dealcontext` in this skill; it logs in with the three `DEALCONTEXT_` environment variables and saves the session token. The HTTP examples assume `BASE_URL` is the server address and `TOKEN` is a token obtained from `POST /api/collections/agents/auth-with-password` with `{ "identity": "agent@example.com", "password": "..." }`. Never save real credentials in a file. Field names and rules are in [schema.md](schema.md); the order of steps is in [workflows.md](workflows.md).
 
 ## Read
 

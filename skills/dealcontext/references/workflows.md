@@ -80,7 +80,7 @@ Set `DEALCONTEXT_URL` and `DEALCONTEXT_AGENT_EMAIL` in the calling environment. 
 
 Workspace JIT creates an eligible account on first login and immediately grants shared CRM access. Existing accounts retain their IDs and attribution. Accounts outside the configured Google Workspace and disabled accounts cannot log in; ask the operator to resolve access instead of trying another identity.
 
-The client stores only the DealContext token, never Google's access or refresh tokens, in `$XDG_CACHE_HOME/dealcontext/` (default `~/.cache/dealcontext/`) with mode 0600. Tokens expire seven days after issue. Active Google sessions renew at most every five minutes or near expiry; `whoami` always renews. After seven days without renewal, repeat browser login. `logout` removes the local cache; an operator disables the account to revoke server access. Workspace suspension alone does not invalidate an already-issued DealContext token.
+The client stores only the DealContext token, never Google's access or refresh tokens, with mode 0600 in `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`), or in `DEALCONTEXT_SESSION_DIR` when set; a session left in `~/.cache/dealcontext/` by an older client is moved there on first use. Tokens expire seven days after issue. Active Google sessions renew at most every five minutes or near expiry; `whoami` always renews. After seven days without renewal, repeat browser login. `logout` removes the local session, including any old copy in `~/.cache/dealcontext/`; an operator disables the account to revoke server access. Workspace suspension alone does not invalidate an already-issued DealContext token.
 
 ## Linking records for humans
 
