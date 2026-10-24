@@ -19,9 +19,10 @@ reject old reruns; they do not lock Git refs, and main can advance after a check
 Concurrency serializes running releases but does not guarantee commit ordering
 or execution of every pending run. Do not cancel a deployment in progress.
 
-The active deployment uses the main-only `once-v2` GitHub environment and its
-existing app-specific restricted SSH key. `CONTEXT_DEPLOY_PAUSED=true` disables
-deployment without disabling validation or image publication.
+DealContext deploys through the GitHub environment named by `COLORS_PROFILE`,
+now `pocketdeploy-v2`, and its PocketDeploy SSH key. `CONTEXT_DEPLOY_PAUSED=true`
+disables deployment without disabling validation or image publication. The
+applications still on `once-v2` use the shared dispatcher described below.
 
 Deployment sends no caller-selected remote command or registry credentials.
 Strict host-key checking and a dedicated forced-command key select the permitted

@@ -329,12 +329,14 @@ Trusted proxy header: PocketBase uses it for the client address in the rate limi
 
 Superuser and dashboard: the PocketBase dashboard at `/_/` is reachable on the public host. It is protected by the superuser login and by the `*:auth` rate limit; no second factor is configured. Use a long random password. Because the entrypoint upserts the superuser on every start, a password changed in the dashboard lasts until the next start: change the Colors parameter instead. When the two variables are not set and the database has no superuser, PocketBase prints a one-time installation link with a token to the container log.
 
-Continuous deployment uses the main-only `once-v2` GitHub environment and the
-maintained `once-pocketcontext-v2` shared stop-first dispatcher. Set
-`CONTEXT_DEPLOY_PAUSED=true` to pause deployment without disabling publication.
-The app-local installer and update wrapper are retired and refuse execution.
-The shared dispatcher resolves an immutable image, stops the sole writer with a
-300-second graceful timeout, and preserves its volume. It has no automatic rollback.
+Continuous deployment uses the main-only `pocketdeploy-v2` GitHub environment
+when `COLORS_PROFILE=pocketdeploy-v2`. Set `CONTEXT_DEPLOY_PAUSED=true` to pause
+deployment without disabling publication. The PocketDeploy SSH key sends no
+command and uses pinned host keys. The host's stop-first policy stops the sole
+writer with a 300-second graceful timeout and preserves its volume. It has no
+automatic rollback. DealContext moved from `once-pocketcontext-v2` to the private
+`pocketdeploy-v2` scaffold on 24 October 2026 by recovery from its replica. The
+app-local installer and update wrapper are retired and refuse execution.
 See the [common CI and deployment contract](docs/ci-and-deployment.md) for gates,
 restricted SSH, stale-release checks and post-deployment verification limits.
 

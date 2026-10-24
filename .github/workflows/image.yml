@@ -228,14 +228,13 @@ jobs:
 
           # Pinned by ONCE at provisioning time, not scanned here. Fail closed.
           if [ -z "$SSH_KNOWN_HOSTS" ]; then
-            echo "SSH_KNOWN_HOSTS is unset; configure the once-pocketcontext-v2 deployment environment" >&2
+            echo "SSH_KNOWN_HOSTS is unset - configure the deployment environment before releasing" >&2
             exit 1
           fi
           printf '%s\n' "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
 
-          # The fixed shared dispatcher accepts no remote command or registry credentials.
+          # A ping, not a command: the PocketDeploy key deploys every host it owns.
           # It resolves latest to a digest; the workflow does not attest the live source revision.
-          test "$SERVER_USER" = deploy
           ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes "$SERVER_USER@$SERVER_IP" < /dev/null
       - name: Verify public health
         run: |
