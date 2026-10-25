@@ -21,20 +21,20 @@ or execution of every pending run. Do not cancel a deployment in progress.
 
 DealContext deploys through the GitHub environment named by `COLORS_PROFILE`,
 now `pocketdeploy-v2`, and its PocketDeploy SSH key. `CONTEXT_DEPLOY_PAUSED=true`
-disables deployment without disabling validation or image publication. The
-applications still on `once-v2` use the shared dispatcher described below.
+disables deployment without disabling validation or image publication.
 
 Deployment sends no caller-selected remote command or registry credentials.
 Strict host-key checking and a dedicated forced-command key select the permitted
-application. The shared `once-pocketcontext-v2` dispatcher resolves the configured
-image to an immutable digest, takes the host/application deployment lock, refuses
-pending recovery state, disables the old writer's restart policy, and requires a
-clean stop before replacement. The maintained policy uses a 300-second grace
-period and disables ONCE's independent automatic image updates. It preserves
-named volumes and verifies the replacement. It does not automatically roll back.
+application. PocketDeploy's per-repository handler takes the host deployment lock
+and converges only this application from the image configured in
+`pocketdeploy-v2/colors.yml`, recording its immutable digest. The configured
+`stop-first` strategy stops the old writer cleanly, with a 300-second grace period,
+before starting the replacement. ONCE's independent automatic image updates are
+disabled. Named volumes are preserved and the replacement is health-checked. It
+does not automatically roll back.
 
 Workflow health checks prove HTTP/database availability, not the exact deployed
-source revision, data equivalence, or backup durability. The shared dispatcher
+source revision, data equivalence, or backup durability. The handler
 resolves `latest` when it runs; the commandless SSH contract does not carry the
 workflow's digest. Record independent runtime revision evidence when releasing.
 Host-local locks are not distributed fencing, and Litestream remains asynchronous.
