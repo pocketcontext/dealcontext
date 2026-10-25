@@ -254,6 +254,10 @@ Recovery stages `data.db` privately, checks SQLite and downloads every file refe
 from the actual collection schema (including authentication avatars), then fsyncs
 and installs the database. These downloads establish existence and readability;
 without an authoritative stored digest they do not establish byte integrity.
+Every start, including restarts on an existing volume, downloads these files in
+parallel (`DEALCONTEXT_VERIFY_CONCURRENCY`, 1–64, default 16) so the server
+becomes ready within ONCE's fixed 120-second deployment wait; the first failure
+refuses startup.
 Retain both storage histories and a single writer. Frozen recovery additionally
 requires the separately preserved `maintenance.json` and `auxiliary.db`.
 
@@ -271,6 +275,7 @@ ONCE injects `BASE_URL`, `SMTP_ADDRESS`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PAS
 | `DEALCONTEXT_INTAKE_ORIGINS` | Comma-separated browser origins that may post the [public enquiry form](#public-enquiry-form), for example `https://pocketcontext.com`. Added to `BASE_URL` in the CORS origins. Unset: only `BASE_URL`. |
 | `DEALCONTEXT_S3_BUCKET`, `DEALCONTEXT_S3_ENDPOINT`, `DEALCONTEXT_S3_REGION`, `DEALCONTEXT_S3_ACCESS_KEY_ID`, `DEALCONTEXT_S3_SECRET_ACCESS_KEY` | Required complete container primary file storage configuration; dedicated private bucket and credentials separate from replicas. Does not migrate existing files. |
 | `DEALCONTEXT_S3_FORCE_PATH_STYLE` | Optional `true` (default) or `false`; requires complete primary storage configuration. |
+| `DEALCONTEXT_VERIFY_CONCURRENCY` | Optional number of parallel startup file downloads, an integer from 1 to 64 (default 16). Any other value stops container startup. |
 | `LITESTREAM_BUCKET`, `LITESTREAM_PATH`, `LITESTREAM_ACCESS_KEY_ID`, `LITESTREAM_SECRET_ACCESS_KEY` | Required. The S3 replica of `/storage/pb_data/data.db`. A missing one is a startup error that names it. |
 | `LITESTREAM_REGION`, `LITESTREAM_ENDPOINT` | Region and, for a service other than AWS S3, the endpoint URL. |
 | `LITESTREAM_SYNC_INTERVAL` | Default `10s`. |

@@ -25,6 +25,8 @@ jobs:
         run: python3 dealcontext/tests/deploy_workflow.py
       - name: Test packaged resources and launcher
         run: python3 dealcontext/tests/packaging.py
+      - name: Test Python container startup and verification
+        run: python3 dealcontext/tests/entrypoint.py
       - name: Read server revision
         id: server
         shell: bash

@@ -226,6 +226,71 @@ class RuntimeTests(unittest.TestCase):
                 runtime.verify_remote(self.data, client)
             client.get_object.assert_not_called()
 
+    def files(self, count):
+        with closing(sqlite3.connect(self.data / 'data.db')) as conn:
+            conn.executemany('INSERT INTO sources VALUES(?,?,?)',
+                [(f'doc{n}', f'file{n}.txt', None) for n in range(count)])
+            conn.commit()
+        return {'col/doc/synthetic.txt', *(f'col/doc{n}/file{n}.txt' for n in range(count))}
+
+    def test_parallel_verification_fetches_every_object_exactly_once(self):
+        self.database()
+        keys = self.files(40)
+        fetched = []
+        client = Mock()
+        def get(**kw):
+            fetched.append(kw['Key'])
+            time.sleep(0.01)
+            return {'Body': io.BytesIO(ORIGINAL), 'ContentLength': len(ORIGINAL)}
+        client.get_object.side_effect = get
+        for workers in ('1', '8', '64'):
+            fetched.clear()
+            with self.subTest(workers=workers), patch.dict(os.environ, {'DEALCONTEXT_VERIFY_CONCURRENCY': workers}):
+                runtime.verify_remote(self.data, client)
+                self.assertEqual(sorted(fetched), sorted(keys))
+
+    def test_parallel_missing_and_short_objects_refuse_startup(self):
+        self.database()
+        self.files(30)
+        bad = 'col/doc17/file17.txt'
+        def missing(**kw):
+            if kw['Key'] == bad:
+                raise FileNotFoundError()
+            return {'Body': io.BytesIO(ORIGINAL)}
+        cases = [
+            (missing, FileNotFoundError),
+            (lambda **kw: {'Body': io.BytesIO(ORIGINAL), 'ContentLength': len(ORIGINAL) + (kw['Key'] == bad)}, runtime.StartupError),
+        ]
+        for side_effect, error in cases:
+            client = Mock()
+            client.get_object.side_effect = side_effect
+            with self.subTest(error=error), patch.dict(os.environ, {'DEALCONTEXT_VERIFY_CONCURRENCY': '8'}):
+                with self.assertRaises(error):
+                    runtime.verify_remote(self.data, client)
+
+    def test_first_failure_cancels_queued_verification(self):
+        self.database()
+        keys = self.files(50)
+        client = Mock()
+        client.get_object.side_effect = FileNotFoundError()
+        with patch.dict(os.environ, {'DEALCONTEXT_VERIFY_CONCURRENCY': '2'}), self.assertRaises(FileNotFoundError):
+            runtime.verify_remote(self.data, client)
+        self.assertLess(client.get_object.call_count, len(keys))
+
+    def test_verification_concurrency_must_be_bounded_integer(self):
+        self.database()
+        for value in ('0', '65', '-1', '', ' 8', '1.5', 'many', '\u0661\u0666'):
+            client = Mock()
+            with self.subTest(value=value), patch.dict(os.environ, {'DEALCONTEXT_VERIFY_CONCURRENCY': value}):
+                with self.assertRaises(runtime.StartupError):
+                    runtime.validate_config()
+                with self.assertRaises(runtime.StartupError):
+                    runtime.verify_remote(self.data, client)
+                client.get_object.assert_not_called()
+        for value in ('1', '64'):
+            with patch.dict(os.environ, {'DEALCONTEXT_VERIFY_CONCURRENCY': value}):
+                runtime.validate_config()
+
     def test_frozen_storage_must_match_all_stored_fields(self):
         self.database()
         self.marker()
