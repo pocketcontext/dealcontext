@@ -336,7 +336,7 @@ command and uses pinned host keys. The host's stop-first policy stops the sole
 writer with a 300-second graceful timeout and preserves its volume. It has no
 automatic rollback. DealContext moved from `once-pocketcontext-v2` to the private
 `pocketdeploy-v2` scaffold on 24 October 2026 by recovery from its replica. The
-app-local installer and update wrapper are retired and refuse execution.
+app-local installer and update wrapper for the retired host have been removed.
 See the [common CI and deployment contract](docs/ci-and-deployment.md) for gates,
 restricted SSH, stale-release checks and post-deployment verification limits.
 

@@ -102,16 +102,11 @@ class DeploymentTests(unittest.TestCase):
                 result, _, _ = self.run_step(step, failing_tool=tool)
                 self.assertEqual(result.returncode, 17)
 
-    def test_retired_commands_fail_closed_with_guidance(self):
+    def test_retired_commands_are_removed(self):
+        # The old-host installer and update wrapper were removed after the move to pocketdeploy-v2.
         for filename in ('install.py', f'deploy-{APP}.py'):
-            for extra in ([], ['unexpected-target']):
-                with self.subTest(filename=filename, extra=extra):
-                    result = subprocess.run([sys.executable, '-I', str(ROOT / 'deploy' / filename), *extra],
-                                            env={'PATH': '/nonexistent'}, capture_output=True, text=True)
-                    self.assertNotEqual(result.returncode, 0)
-                    self.assertIn('once-pocketcontext-v2', result.stderr)
-                    self.assertIn('retired', result.stderr)
-                    self.assertEqual(result.stdout, '')
+            with self.subTest(filename=filename):
+                self.assertFalse((ROOT / 'deploy' / filename).exists())
 
 
     def test_application_and_container_checks_cover_both_architectures(self):
