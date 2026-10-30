@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ContentLink } from "./links";
 import { app, type Entity } from "./config";
 import {
   pb,
@@ -178,9 +179,7 @@ function Value({
           components={{
             img: () => null,
             a: ({ href, children }) => (
-              <a href={href} rel="noopener noreferrer">
-                {children}
-              </a>
+              <ContentLink href={href}>{children}</ContentLink>
             ),
           }}
         >
@@ -189,11 +188,7 @@ function Value({
       </div>
     );
   if (/^https?:\/\//i.test(text))
-    return (
-      <a href={text} rel="noopener noreferrer">
-        {text}
-      </a>
-    );
+    return <ContentLink href={text}>{text}</ContentLink>;
   return <span className="text-value">{text}</span>;
 }
 function Detail({ e, id }: { e: Entity; id: string }) {

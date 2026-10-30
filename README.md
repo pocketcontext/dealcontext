@@ -439,7 +439,8 @@ Use Node.js 24 and pnpm 10.33.2. The browser smoke uses synthetic records and an
 temporary database. It tests actual production assets, authentication, direct links,
 reload, search pagination, mobile navigation, and SQL/schema compatibility. Unit and
 mocked browser tests additionally cover query escaping, malformed routes, relationship
-labels, and inert Markdown. Generated assets are not committed.
+labels, inert Markdown, and outside links opening in a new tab. Generated assets are
+not committed.
 For browser Google OAuth, register the application's own
 `https://<application-host>/api/oauth2-redirect` URI in its existing OAuth client.
 
