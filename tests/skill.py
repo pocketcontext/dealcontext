@@ -107,7 +107,7 @@ class Conflict(BaseHTTPRequestHandler):
         conflict = {'status': 409, 'message': 'The record was changed by another request. Read it again and retry.', 'data': {}}
         if self.path.endswith('/auth-with-password'):
             Conflict.logins += 1
-            self.reply(200, {'token': 'stub-token-0123456789', 'record': {'id': 'stubagent000001', 'name': 'Stub'}})
+            self.reply(200, {'token': 'stub-token-0123456789', 'record': {'id': 'stubagent000001', 'name': 'Stub', 'collectionName': 'agents', 'email': EMAIL}})
         elif self.path == '/api/batch':
             self.reply(400, {'status': 400, 'message': 'Batch transaction failed.', 'data': {'requests': {'0': {'code': 'batch_request_failed', 'response': conflict}}}})
         elif self.path == '/api/context/query':
@@ -139,7 +139,7 @@ class ClientIdentityGate(Conflict):
         if agent != 'DealContext/1.0':
             self.reply(403, {'message': 'Client identification required'})
         elif self.path.endswith('/auth-with-password'):
-            self.reply(200, {'token': 'identity-test-token-0123456789', 'record': {'id': 'identityagent01'}})
+            self.reply(200, {'token': 'identity-test-token-0123456789', 'record': {'id': 'identityagent01', 'collectionName': 'agents', 'email': EMAIL}})
         elif self.path == '/api/context/query' and self.headers.get('Authorization') == 'identity-test-token-0123456789':
             self.reply(200, {'columns': ['1'], 'rows': [[1]], 'truncated': False})
         else:
@@ -168,9 +168,9 @@ class SkillVersion(Conflict):
             self.reply(200, {'id': 'stubrecord00001'})
 
     def do_POST(self):
-        self.rfile.read(int(self.headers.get('Content-Length') or 0))
+        body = json.loads(self.rfile.read(int(self.headers.get('Content-Length') or 0)) or b'{}')
         if self.path.endswith('/auth-with-password') or self.path.endswith('/auth-refresh'):
-            self.reply(200, {'token': self.token, 'record': {'id': 'stubagent000001', 'name': 'Stub'}})
+            self.reply(200, {'token': self.token, 'record': {'id': 'stubagent000001', 'name': 'Stub', 'collectionName': 'agents', 'email': body.get('identity', EMAIL)}})
         elif self.path == '/api/context/query':
             self.reply(200, {'columns': ['1'], 'rows': [[1]], 'truncated': False})
         elif self.path == '/api/batch':
@@ -636,6 +636,14 @@ def main():
             dc('logout', DEALCONTEXT_AGENT_PASSWORD=None)
             assert not session_file.exists()
             dc('logout')
+        with item('explicit login saves connection settings for commands without environment overrides'):
+            dc('login', '--password', '--url', base, '--email', EMAIL,
+               DEALCONTEXT_URL=None, DEALCONTEXT_AGENT_EMAIL=None)
+            result, _ = dc('whoami', DEALCONTEXT_URL=None, DEALCONTEXT_AGENT_EMAIL=None,
+                           DEALCONTEXT_AGENT_PASSWORD=None)
+            assert json.loads(result)['id'] == agent['id']
+            dc('logout', '--forget', DEALCONTEXT_URL=None, DEALCONTEXT_AGENT_EMAIL=None)
+            assert not (tmp / 'state/dealcontext/default.json').exists()
         with item('the password and tokens never appear in stdout or stderr'):
             assert len(tokens) >= 2 and all(len(token) > 15 for token in tokens), len(tokens)  # Logins in the same second return the same token.
             for number, text in enumerate(outputs):

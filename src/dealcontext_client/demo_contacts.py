@@ -324,7 +324,7 @@ def run(args):
         sources = [source for source in sources if source['source'] == args.source]
         if not sources:
             fail('requested source is not configured', 2)
-    cfg = cli.config()
+    cfg = cli.config(args=args)
     cli.skill_advisory(cfg)
     if args.demo_command == 'status':
         result = [latest_runs(cfg, source) for source in ((args.source,) if args.source else SOURCES)]

@@ -74,6 +74,9 @@ An operator disables an account with `PATCH /api/collections/agents/records/<id>
 
 ## Install the skill on another computer
 
+Sign in with `dealcontext login --google --url https://crm.pocketcontext.com --email you@pocketcontext.com`. For password authentication use `login --password` with `DEALCONTEXT_AGENT_PASSWORD` supplied privately in the environment. URL and email options may appear before or after the command. Resolution is CLI options, then `DEALCONTEXT_URL` / `DEALCONTEXT_AGENT_EMAIL`, then saved defaults. Successful explicit login saves the URL and email in `default.json` beside the private per-account token file; ordinary commands and refreshes do not change the default. The directory is `DEALCONTEXT_SESSION_DIR`, otherwise `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`). Files use mode 0600 and the directory 0700. `logout` removes the selected token and retains settings; `logout --forget` also removes matching defaults. Legacy cache sessions are not imported; sign in again. Passwords are never saved.
+
+
 The computer that operates the CRM needs uv, Python 3.11 or later, the skill, a server URL, and an account email. Use Google login or an account password. It does not need a clone of this repository. Install the skill with the [`skills` CLI](https://github.com/vercel-labs/skills), which needs Node.js:
 
 ```sh
@@ -83,7 +86,7 @@ npx skills add pocketcontext/dealcontext --skill dealcontext --agent claude-code
 
 `-g` installs for the user (for Claude Code: `~/.claude/skills/dealcontext`); without it the skill is installed into the current project. `--agent` takes one or more agent names; without `--agent` and `-y` the CLI asks. `npx skills update dealcontext -g` fetches a newer version. A local checkout works as a source too: `npx skills add /path/to/dealcontext --skill dealcontext`. Without Node.js, copy the `skills/dealcontext` directory into the agent's skills directory.
 
-Set these variables in the environment that starts the coding agent:
+Environment overrides remain available for scripts:
 
 ```sh
 export DEALCONTEXT_URL=https://crm.example.com
@@ -100,9 +103,9 @@ Check the setup from the installed skill directory:
 ./dealcontext check    # exit 0: the skill's schema snapshot matches the server; exit 3: lists the differences
 ```
 
-`dealcontext` runs a pinned Python package through uv. It saves the login session with mode 0600 in `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`), or in `DEALCONTEXT_SESSION_DIR` when set, so clearing `~/.cache` does not sign you out. A session left in `~/.cache/dealcontext/` by an older client is moved there on first use. It never prints the password or token, and has no delete command. `dealcontext logout` removes the session, any old cached session, and the version metadata. When `check` reports differences, the server is newer or older than the installed skill: the live schema is authoritative, and updating the skill brings the reference files back in line.
+`dealcontext` runs a pinned Python package through uv. It saves the login session with mode 0600 in `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`), or in `DEALCONTEXT_SESSION_DIR` when set, so clearing `~/.cache` does not sign you out. It never prints the password or token, and has no delete command. `dealcontext logout` removes the selected session and version metadata, retaining default settings. When `check` reports differences, the server is newer or older than the installed skill: the live schema is authoritative, and updating the skill brings the reference files back in line.
 
-Remote commands automatically compare the installed skill revision with `GET /api/dealcontext/skill-version`, which requires an agent login and returns `{"recommendedRevision":4}`. If the server recommends a newer revision, the client warns on stderr with update instructions; normal command JSON and exit codes are unchanged. The assistant must relay that warning to the user. The client never installs updates or blocks operations because of a revision mismatch.
+Remote commands automatically compare the installed skill revision with `GET /api/dealcontext/skill-version`, which requires an agent login and returns `{"recommendedRevision":6}`. If the server recommends a newer revision, the client warns on stderr with update instructions; normal command JSON and exit codes are unchanged. The assistant must relay that warning to the user. The client never installs updates or blocks operations because of a revision mismatch.
 
 Version metadata is cached in `$XDG_CACHE_HOME/dealcontext/` (default `~/.cache/dealcontext/`), separately from the login session, for five minutes, scoped to the server URL, account email, and installed skill revision. `dealcontext check` always refreshes it and still compares the live schema with the snapshot. `newid` and `logout` make no requests. With an older server returning 404, commands continue silently and `dealcontext check` still provides schema comparison. Other metadata failures produce a warning and the requested command continues.
 

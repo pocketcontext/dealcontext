@@ -120,21 +120,6 @@ class OAuthTest(unittest.TestCase):
             self.assertEqual(tc.session_file(self.cfg).parent, Path(self.tmp.name) / 'override')
             self.assertIsNone(tc.load_session(self.cfg))
 
-    def test_legacy_cache_session_moved_once(self):
-        legacy = tc.legacy_session_file(self.cfg)
-        legacy.parent.mkdir(parents=True)
-        legacy.write_text(json.dumps({'url': self.cfg['url'], 'email': self.cfg['email'], 'token': 'legacy-secret'}))
-        self.assertEqual(tc.load_session(self.cfg)['token'], 'legacy-secret')
-        self.assertFalse(legacy.exists())
-        self.assertEqual(stat.S_IMODE(tc.session_file(self.cfg).stat().st_mode), 0o600)
-        self.assertEqual(tc.load_session(self.cfg)['token'], 'legacy-secret')
-        # A saved session wins over a stale legacy file, and logout removes both.
-        legacy.write_text(json.dumps({'url': self.cfg['url'], 'email': self.cfg['email'], 'token': 'stale-secret'}))
-        self.assertEqual(tc.load_session(self.cfg)['token'], 'legacy-secret')
-        with patch.dict(os.environ, {'DEALCONTEXT_URL': self.cfg['url'], 'DEALCONTEXT_AGENT_EMAIL': self.cfg['email']}):
-            tc.run(tc.parse(['logout']))
-        self.assertFalse(legacy.exists() or tc.session_file(self.cfg).exists())
-
     def printed_url(self):
         return next(m for m in self.messages if m.startswith('Open this URL')).split('\n')[1]
 
@@ -257,6 +242,80 @@ class OAuthTest(unittest.TestCase):
         args = tc.parse(['login', '--google'])
         self.assertEqual((args.port, args.timeout, args.no_browser), (8765, 180, False))
         self.assertTrue(tc.parse(['login', '--google', '--no-browser']).no_browser)
+
+
+    def test_explicit_login_saves_settings_without_environment(self):
+        env = {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state'), tc.ENV[2]: 'synthetic-password'}
+        with patch.dict(os.environ, env, clear=True), patch.object(tc, 'send', return_value=(200, self.auth)):
+            tc.run(tc.parse(['login', '--password', '--url', self.cfg['url'], '--email', self.cfg['email']]))
+            cfg = tc.config()
+            self.assertEqual((cfg['url'], cfg['email']), (self.cfg['url'], self.cfg['email']))
+            self.assertEqual(tc.load_session(cfg)['token'], 'pocketbase-secret')
+            saved = json.loads(tc.default_file().read_text())
+            self.assertEqual(saved, {'url': self.cfg['url'], 'email': self.cfg['email']})
+            self.assertEqual(stat.S_IMODE(tc.default_file().stat().st_mode), 0o600)
+            tc.run(tc.parse(['logout']))
+            self.assertIsNone(tc.load_session(cfg))
+            self.assertEqual(tc.read_default(), saved)
+            tc.run(tc.parse(['logout', '--forget']))
+            self.assertFalse(tc.default_file().exists())
+
+    def test_settings_precedence_and_account_isolation(self):
+        with patch.dict(os.environ, {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state')}, clear=True):
+            tc.save_default(self.cfg)
+            tc.auth_session(self.cfg, self.auth, 'google')
+            with patch.dict(os.environ, {tc.ENV[0]: 'https://other.example.com', tc.ENV[1]: 'other@example.com'}):
+                self.assertIsNone(tc.load_session(tc.config()))
+                args = tc.parse(['--url', self.cfg['url'], 'whoami', '--email', self.cfg['email']])
+                self.assertEqual(tc.load_session(tc.config(args=args))['token'], 'pocketbase-secret')
+                tc.run(tc.parse(['logout', '--forget']))
+                self.assertEqual(tc.read_default()['url'], self.cfg['url'])
+            self.assertEqual(tc.config()['email'], self.cfg['email'])
+
+    def test_failed_login_preserves_default(self):
+        with patch.dict(os.environ, {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state'), tc.ENV[2]: 'synthetic'}, clear=True):
+            tc.save_default(self.cfg)
+            before = tc.default_file().read_bytes()
+            with patch.object(tc, 'send', return_value=(401, {})), self.assertRaises(tc.Fail):
+                tc.run(tc.parse(['login', '--password', '--url', 'https://other.example.com', '--email', 'other@example.com']))
+            self.assertEqual(tc.default_file().read_bytes(), before)
+
+    def test_refresh_does_not_select_default(self):
+        with patch.dict(os.environ, {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state')}, clear=True):
+            tc.auth_session(self.cfg, self.auth, 'google')
+            self.assertFalse(tc.default_file().exists())
+
+    def test_unsafe_or_malformed_default_rejected(self):
+        with patch.dict(os.environ, {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state')}, clear=True):
+            tc.save_default(self.cfg)
+            tc.default_file().chmod(0o644)
+            with self.assertRaises(tc.Fail):
+                tc.config()
+            tc.default_file().chmod(0o600)
+            tc.default_file().write_text('not json')
+            with self.assertRaises(tc.Fail):
+                tc.config()
+            tc.default_file().unlink()
+            target = Path(self.tmp.name) / 'outside'
+            target.write_text('{}')
+            tc.default_file().symlink_to(target)
+            with self.assertRaises(tc.Fail):
+                tc.config()
+            with self.assertRaises(tc.Fail):
+                tc.save_default(self.cfg)
+            self.assertEqual(target.read_text(), '{}')
+
+    def test_unsafe_destination_rejected(self):
+        with patch.dict(os.environ, {}, clear=True):
+            for url in ('http://remote.example.com', 'https://user:secret@example.com', 'https://example.com/?token=secret', 'https://example.com:invalid', 'https://example.com:99999', 'https://exa\nmple.com'):
+                with self.subTest(url=url), self.assertRaises(tc.Fail):
+                    tc.config(args=tc.parse(['whoami', '--url', url, '--email', 'member@example.com']))
+
+    def test_failed_session_save_does_not_select_default(self):
+        with patch.dict(os.environ, {'XDG_STATE_HOME': str(Path(self.tmp.name) / 'state'), tc.ENV[2]: 'synthetic'}, clear=True):
+            with patch.object(tc, 'save_session', return_value=False), patch.object(tc, 'send', return_value=(200, self.auth)), self.assertRaises(tc.Fail):
+                tc.run(tc.parse(['login', '--password', '--url', self.cfg['url'], '--email', self.cfg['email']]))
+            self.assertFalse(tc.default_file().exists())
 
 
 if __name__ == '__main__':

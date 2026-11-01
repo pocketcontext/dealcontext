@@ -9,15 +9,16 @@ DealContext is a shared sales CRM on a PocketBase server. It has no user interfa
 
 The launcher requires uv and Python 3.11 or later; its first run installs the pinned client package.
 
-## Configuration
+Sign in with `dealcontext login --google --url https://crm.pocketcontext.com --email you@pocketcontext.com`. For password authentication use `login --password` with `DEALCONTEXT_AGENT_PASSWORD` supplied privately in the environment. URL and email options may appear before or after the command. Resolution is CLI options, then `DEALCONTEXT_URL` / `DEALCONTEXT_AGENT_EMAIL`, then saved defaults. Successful explicit login saves the URL and email in `default.json` beside the private per-account token file; ordinary commands and refreshes do not change the default. The directory is `DEALCONTEXT_SESSION_DIR`, otherwise `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`). Files use mode 0600 and the directory 0700. `logout` removes the selected token and retains settings; `logout --forget` also removes matching defaults. Legacy cache sessions are not imported; sign in again. Passwords are never saved.
 
-The client reads these environment variables:
+## Configuration
+The client supports these environment overrides:
 
 - `DEALCONTEXT_URL`: server address, for example `https://crm.example.com`
 - `DEALCONTEXT_AGENT_EMAIL`: email of your account in the `agents` collection
 - `DEALCONTEXT_AGENT_PASSWORD`: optional password for password authentication
 
-The URL and email must already be set in the environment your commands run in; do not set them inline in a command. If one is missing, the client exits with code 2 and names it. Stop and tell the user which variable to set. Do not search files for credentials. Never ask for, look for, or use superuser (operator) credentials; CRM work needs only the agent account. Never put the CRM password or token in a command line, a file, or your reply. Demo export credentials use the private configuration at `~/.config/dealcontext/demo-contacts.json`, or the file selected with `--config ABS_PATH`, as described in `references/workflows.md`. For Google authentication, run `./dealcontext login --google`. `login --google` opens the default browser itself; run it in the background or with a tool timeout longer than its wait (180 seconds by default). If its output says `Browser not opened`, open the printed URL in the user's default browser with the OS opener; never drive or automate the browser. Let the user complete any account selection, authentication, or consent. Process one application login at a time: wait for login to finish and verify completion with `./dealcontext whoami` before starting another application's login. Workspace JIT may create the account on first login; disabled accounts require an operator to restore access. For an SSH session, see `references/workflows.md`, "Google sign-in". The client logs in when needed and saves the session token with mode 0600 in `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`), or in `DEALCONTEXT_SESSION_DIR` when set, so clearing `~/.cache` does not sign you out; a session left in `~/.cache/dealcontext/` by an older client is moved there on first use, and `logout` removes both.
+Supply URL and email through login options, environment variables or saved defaults. If configuration is missing, ask the user for the server URL and account email. Do not search files for credentials. Never ask for, look for, or use superuser (operator) credentials; CRM work needs only the agent account. Never put the CRM password or token in a command line, a file, or your reply. Demo export credentials use the private configuration at `~/.config/dealcontext/demo-contacts.json`, or the file selected with `--config ABS_PATH`, as described in `references/workflows.md`. For Google authentication, run `./dealcontext login --google`. `login --google` opens the default browser itself; run it in the background or with a tool timeout longer than its wait (180 seconds by default). If its output says `Browser not opened`, open the printed URL in the user's default browser with the OS opener; never drive or automate the browser. Let the user complete any account selection, authentication, or consent. Process one application login at a time: wait for login to finish and verify completion with `./dealcontext whoami` before starting another application's login. Workspace JIT may create the account on first login; disabled accounts require an operator to restore access. For an SSH session, see `references/workflows.md`, "Google sign-in". The client logs in when needed and saves the session token with mode 0600 in `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`), or in `DEALCONTEXT_SESSION_DIR` when set, so clearing `~/.cache` does not sign you out.
 
 Start a session with:
 
@@ -27,7 +28,6 @@ Start a session with:
 ```
 
 ## Commands
-
 For manual demo imports, read "Demo contact synchronization" in `references/workflows.md` and the source collection protocol in `references/schema.md`. Imports never send messages or create CRM people.
 
 ```text
