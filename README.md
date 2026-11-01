@@ -292,6 +292,11 @@ Use the public host of the deployed server and add the website's origin to `DEAL
 
 The `Dockerfile` builds an image for [Basecamp ONCE](https://github.com/basecamp/once): HTTP on port 80, `GET /up` for the health check, SQLite state in `/storage/pb_data`, and primary files in a separate private S3 bucket. The build stage compiles PocketContext at the commit in `POCKETCONTEXT_VERSION`. The runtime stage adds `pb_migrations/`, `pb_hooks/`, `pocketcontext.json`, and Litestream 0.5.17. `tini` is PID 1 and runs `docker/entrypoint.py`, which restores the database when the volume is empty, upserts the superuser, and starts Litestream; Litestream starts the server, forwards the stop signal to it, and makes a final sync after the server has exited. The container runs as root, because ONCE creates and mounts `/storage` and offers no option to set its owner or the container's user.
 
+Litestream checks expired L0 files every five minutes to reduce idle object-store
+listings. Replication still defaults to ten seconds; L0 retention, compaction and
+snapshot retention keep their existing defaults. Cleanup may retain eligible files
+longer locally and remotely; successful L1 compaction also runs cleanup.
+
 The workflow `.github/workflows/image.yml` builds and checks the image on every push and pull request. On `main` it also publishes `ghcr.io/pocketcontext/dealcontext:latest` and `:sha-<short commit>` for `linux/amd64` and `linux/arm64`, then pings the server. ONCE has no registry login, so the package must be public. The first publication from this public repository created it as public: `ghcr.io/pocketcontext/dealcontext:latest` can be pulled without credentials. The image holds the server binary, migrations, hooks, and configuration, and no credentials. Check the package settings on GitHub if a pull on the server is refused.
 
 Normal container startup requires an existing database or a recoverable replica.

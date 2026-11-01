@@ -9,6 +9,9 @@ socket:
   path: /var/run/litestream.sock
   permissions: 0600
 
+# Reduce idle object-store listings; retain the existing L0 age and compaction safeguards.
+l0-retention-check-interval: 5m
+
 dbs:
   - path: /storage/pb_data/data.db
     replica:

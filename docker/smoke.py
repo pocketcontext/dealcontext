@@ -358,7 +358,9 @@ def smoke(image, tmp, run_id):
     org, note = write_batch(client, agent_id)
     check_records(client, org, note)
 
-    check_logs(name)
+    text = check_logs(name)
+    check(any("starting L0 retention monitor" in line and "interval=5m0s" in line
+              for line in text.splitlines()), "Litestream uses five-minute L0 cleanup checks")
     stop(name)
 
     step('starting the same container again: the volume keeps the data and the superuser upsert is repeatable')
