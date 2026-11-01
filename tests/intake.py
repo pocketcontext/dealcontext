@@ -222,8 +222,8 @@ def main():
             admin = login('_superusers', ADMIN, ADMIN_PASSWORD)
             def agent(number):
                 mail, password = f'agent{number}@example.test', f'TestAgentPassword{number}!'
-                record = request('POST', '/api/collections/agents/records', {'email': mail, 'password': password, 'passwordConfirm': password, 'name': f'Agent {number}'}, admin)
-                return record, login('agents', mail, password)
+                record = request('POST', '/api/collections/users/records', {'email': mail, 'password': password, 'passwordConfirm': password, 'name': f'Agent {number}'}, admin)
+                return record, login('users', mail, password)
             agent1, token = agent(1)
             agent2, _ = agent(2)
             with item('notification recipients are normalized, unique, and managed only by superusers'):

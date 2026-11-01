@@ -1,5 +1,5 @@
 {
-  "authCollection": "agents",
+  "authCollection": "users",
   "tables": {
     "agent_directory": [
       "id",
@@ -31,5 +31,11 @@
     "delivery": "buffer",
     "captureSql": true,
     "maxBytes": 16777216
+  },
+  "identity": {
+    "issuer": "https://id.pocketcontext.com",
+    "audience": "https://crm.pocketcontext.com",
+    "workspaceDomain": "pocketcontext.com",
+    "allowProvisioning": true
   }
 }

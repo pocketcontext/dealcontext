@@ -28,7 +28,7 @@ class OAuthTest(unittest.TestCase):
         os.environ.pop('DEALCONTEXT_SESSION_DIR', None)
         self.addCleanup(self.env.stop)
         self.cfg = {'url': 'https://tasks.example.com', 'email': 'member@example.com', 'password': 'unused-password'}
-        self.record = {'collectionName': 'agents', 'id': 'user00000000001', 'email': self.cfg['email']}
+        self.record = {'collectionName': 'users', 'id': 'user00000000001', 'email': self.cfg['email']}
         self.auth = {'token': 'pocketbase-secret', 'record': self.record,
                      'meta': {'accessToken': 'google-secret', 'refreshToken': 'google-refresh'}}
         with socket.socket() as sock:
@@ -210,7 +210,7 @@ class OAuthTest(unittest.TestCase):
             self.assertEqual(send.call_count, 1)
             self.assertEqual(send.call_args.args[2], '/api/context/schema')
             with patch.object(tc, 'send', return_value=(200, self.auth)) as send:
-                tc.call(self.cfg, 'POST', '/api/collections/agents/auth-refresh')
+                tc.call(self.cfg, 'POST', '/api/collections/users/auth-refresh')
             self.assertEqual(send.call_count, 1)
             self.assertTrue(tc.oauth_refresh_needed({'token': token(1050), 'refreshed_at': 999}))
             self.assertTrue(tc.oauth_refresh_needed({'token': token(2000), 'refreshed_at': 700}))
@@ -225,7 +225,7 @@ class OAuthTest(unittest.TestCase):
     def test_oauth_transport_error_is_sanitized(self):
         with patch.object(tc, 'send', side_effect=tc.Fail(1, 'redirect /?code=secret-code')):
             with self.assertRaises(tc.Fail) as error:
-                tc.oauth_send(self.cfg, 'POST', '/api/collections/agents/auth-with-oauth2')
+                tc.oauth_send(self.cfg, 'POST', '/api/collections/users/auth-with-oauth2')
         self.assertNotIn('secret-code', str(error.exception))
 
     def test_skill_advisory_never_falls_back_to_password_for_google(self):

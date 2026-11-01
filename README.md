@@ -38,7 +38,7 @@ The server applies migrations on startup. `pb_data/` contains local state and is
 
 ## Provision an agent
 
-Create a superuser with PocketContext's standard `superuser upsert <email> <password>` command, using the same `--dir` and migration paths. Authenticate at `POST /api/collections/_superusers/auth-with-password`. Use that temporary superuser token to create a record at `POST /api/collections/agents/records`:
+Create a superuser with PocketContext's standard `superuser upsert <email> <password>` command, using the same `--dir` and migration paths. Authenticate at `POST /api/collections/_superusers/auth-with-password`. Use that temporary superuser token to create a record at `POST /api/collections/users/records`:
 
 ```json
 {
@@ -49,13 +49,59 @@ Create a superuser with PocketContext's standard `superuser upsert <email> <pass
 }
 ```
 
-Then authenticate the agent at `POST /api/collections/agents/auth-with-password` with `identity` and `password`. Send its token in the `Authorization` header for CRM and SQL requests. Agent accounts cannot provision accounts or edit collection schemas. Keep credentials outside the repository and avoid copying commands containing passwords into shell history.
+Then authenticate the agent at `POST /api/collections/users/auth-with-password` with `identity` and `password`. Send its token in the `Authorization` header for CRM and SQL requests. Agent accounts cannot provision accounts or edit collection schemas. Keep credentials outside the repository and avoid copying commands containing passwords into shell history.
 
 Give the coding agent the skill described in the next section, the server URL, and the provisioned agent credentials. No MCP service is required.
 
-## Google Workspace login and account lifecycle
+## Hosted identity
 
-Humans and coding agents share the existing `agents` auth collection. Existing IDs, owners, audit actors, password login, and the public enquiry endpoint are preserved.
+Bare `dealcontext login --url https://crm.pocketcontext.com --email you@pocketcontext.com`
+uses IdentityContext. It reuses a valid shared session from the other Context apps;
+otherwise complete Google sign-in at the printed hosted URL and enter the one-use
+code in the initiating terminal. SSH needs no callback tunnel for this flow.
+
+The shared session lives privately under `$XDG_STATE_HOME/pocketcontext-id/`
+(default `~/.local/state/pocketcontext-id/`) and expires after seven idle days or
+thirty absolute days. App URL/email defaults and tokens remain in DealContext's
+own state directory. Signed assertions last sixty seconds, are single-use and
+bound to `https://crm.pocketcontext.com`. Application access lasts at most fifteen
+minutes from assertion issue time; refresh, protected-file tokens and realtime
+cannot extend that boundary. Ordinary commands renew through identity without a
+browser or automatic fallback. Existing disabled-account checks and CRM permissions
+remain authoritative.
+
+`login --google` retains the independent direct-app fallback; over SSH that flow
+still needs the loopback port forward. `login --password` is explicit for provisioned
+accounts. App `logout` clears its token; revoke the shared session with the separate
+`identitycontext logout --email EMAIL` command. Complete offboarding disables both
+the central identity and the app account because direct fallback remains available.
+Install that shared-session command if needed:
+
+```sh
+uv tool install 'pocketcontext-identity @ git+https://github.com/pocketcontext/identitycontext.git@ffce6425e24dae7b5576c4de3ae2935223b247cb'
+```
+
+## One-time account collection conversion
+
+The hosted identity release converts the legacy `agents` auth collection into
+PocketBase's existing default `users` collection. It preserves account IDs,
+password hashes, verification and disabled flags, Google provider links, CRM
+ownership, directory entries and historical audit attribution. Relations are
+retargeted by schema; business records are not rewritten. Existing app tokens
+are invalidated and clients must sign in again. There is no old-client compatibility
+layer. `agent_directory` keeps its existing name and public schema.
+
+The conversion runs transactionally and refuses a nonempty default `users`
+collection, a legacy account file field or custom legacy auth indexes. Resolve such cases before deployment;
+never silently merge identities. A verified complete backup is required before
+stop-first deployment. Rollback requires a complete, one-writer backup restore;
+do not roll back only the image after the conversion. Tests cover populated
+business records, disabled accounts, provider links, conflict rejection and
+rollback after partial conversion.
+
+## Direct Google fallback and account lifecycle
+
+Humans and coding agents share PocketBase's default `users` auth collection. Existing IDs, owners, audit actors, password login, and the public enquiry endpoint are preserved.
 
 Create a separate Google OAuth Web application client for DealContext. Register `http://127.0.0.1:8765/callback` for the Python CLI. A browser UI using PocketBase's realtime OAuth flow uses `https://crm.pocketcontext.com/api/oauth2-redirect` instead. Set both `DEALCONTEXT_GOOGLE_CLIENT_ID` and `DEALCONTEXT_GOOGLE_CLIENT_SECRET` through the deployment environment; only one or credentials containing whitespace stop startup. When neither is set, stored provider settings remain unchanged. Configuration preserves other provider options and is applied on first installation and later starts.
 
@@ -70,11 +116,11 @@ skills/dealcontext/dealcontext whoami
 
 `login --google` prints the sign-in URL and opens the default browser unless `--no-browser` is given, an SSH session is detected or no browser is available. For a headless SSH session, connect from the browser's computer with `ssh -L 8765:127.0.0.1:8765 user@ssh-host`, run the login there, and open the printed private URL locally. The CLI validates callback state and uses PKCE. It caches only the DealContext token, never provider tokens. Seven-day tokens renew during active CLI use, at most once per five minutes or near expiry; `whoami` always refreshes. After seven days without renewal, browser login is required again. The applications have separate accounts, tokens, and offboarding controls.
 
-An operator disables an account with `PATCH /api/collections/agents/records/<id>` and `{"disabled":true}` or the dashboard. Login, refresh, REST, SQL, batch, and realtime access are denied; the account's token key is rotated. Re-enabling requires a fresh login and never revives old tokens. Requests already executing when an account is disabled may finish. All account deletion is blocked, including operator deletion, to preserve attribution and assignments; ordinary CRM record deletion by operators is unchanged. Google Workspace suspension alone does not revoke an existing application token.
+An operator disables an account with `PATCH /api/collections/users/records/<id>` and `{"disabled":true}` or the dashboard. Login, refresh, REST, SQL, batch, and realtime access are denied; the account's token key is rotated. Re-enabling requires a fresh login and never revives old tokens. Requests already executing when an account is disabled may finish. All account deletion is blocked, including operator deletion, to preserve attribution and assignments; ordinary CRM record deletion by operators is unchanged. Google Workspace suspension alone does not revoke an existing application token.
 
 ## Install the skill on another computer
 
-Sign in with `dealcontext login --google --url https://crm.pocketcontext.com --email you@pocketcontext.com`. For password authentication use `login --password` with `DEALCONTEXT_AGENT_PASSWORD` supplied privately in the environment. URL and email options may appear before or after the command. Resolution is CLI options, then `DEALCONTEXT_URL` / `DEALCONTEXT_AGENT_EMAIL`, then saved defaults. Successful explicit login saves the URL and email in `default.json` beside the private per-account token file; ordinary commands and refreshes do not change the default. The directory is `DEALCONTEXT_SESSION_DIR`, otherwise `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`). Files use mode 0600 and the directory 0700. `logout` removes the selected token and retains settings; `logout --forget` also removes matching defaults. Legacy cache sessions are not imported; sign in again. Passwords are never saved.
+Sign in with `dealcontext login --url https://crm.pocketcontext.com --email you@pocketcontext.com`. For password authentication use `login --password` with `DEALCONTEXT_AGENT_PASSWORD` supplied privately in the environment. URL and email options may appear before or after the command. Resolution is CLI options, then `DEALCONTEXT_URL` / `DEALCONTEXT_AGENT_EMAIL`, then saved defaults. Successful explicit login saves the URL and email in `default.json` beside the private per-account token file; ordinary commands and refreshes do not change the default. The directory is `DEALCONTEXT_SESSION_DIR`, otherwise `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`). Files use mode 0600 and the directory 0700. `logout` removes the selected token and retains settings; `logout --forget` also removes matching defaults. Legacy cache sessions are not imported; sign in again. Passwords are never saved.
 
 
 The computer that operates the CRM needs uv, Python 3.11 or later, the skill, a server URL, and an account email. Use Google login or an account password. It does not need a clone of this repository. Install the skill with the [`skills` CLI](https://github.com/vercel-labs/skills), which needs Node.js:
@@ -105,7 +151,7 @@ Check the setup from the installed skill directory:
 
 `dealcontext` runs a pinned Python package through uv. It saves the login session with mode 0600 in `$XDG_STATE_HOME/dealcontext/` (default `~/.local/state/dealcontext/`), or in `DEALCONTEXT_SESSION_DIR` when set, so clearing `~/.cache` does not sign you out. It never prints the password or token, and has no delete command. `dealcontext logout` removes the selected session and version metadata, retaining default settings. When `check` reports differences, the server is newer or older than the installed skill: the live schema is authoritative, and updating the skill brings the reference files back in line.
 
-Remote commands automatically compare the installed skill revision with `GET /api/dealcontext/skill-version`, which requires an agent login and returns `{"recommendedRevision":6}`. If the server recommends a newer revision, the client warns on stderr with update instructions; normal command JSON and exit codes are unchanged. The assistant must relay that warning to the user. The client never installs updates or blocks operations because of a revision mismatch.
+Remote commands automatically compare the installed skill revision with `GET /api/dealcontext/skill-version`, which requires an agent login and returns `{"recommendedRevision":7}`. If the server recommends a newer revision, the client warns on stderr with update instructions; normal command JSON and exit codes are unchanged. The assistant must relay that warning to the user. The client never installs updates or blocks operations because of a revision mismatch.
 
 Version metadata is cached in `$XDG_CACHE_HOME/dealcontext/` (default `~/.cache/dealcontext/`), separately from the login session, for five minutes, scoped to the server URL, account email, and installed skill revision. `dealcontext check` always refreshes it and still compares the live schema with the snapshot. `newid` and `logout` make no requests. With an older server returning 404, commands continue silently and `dealcontext check` still provides schema comparison. Other metadata failures produce a warning and the requested command continues.
 
@@ -116,9 +162,9 @@ This identifies agent traffic to proxies that reject Python's generic user-agent
 
 ## Data and permissions
 
-The nine CRM collections, `enquiries`, `audit_log`, and `agent_directory` are SQL-readable. Auth and internal tables are excluded. The operator-managed `enquiry_notification_recipients` collection is superuser-only through the records API and excluded from agent SQL. Every authenticated `agents` account can read, create, and update all CRM records; `enquiries` has narrower rules, see [Public enquiry form](#public-enquiry-form). The `owner` relation assigns work; it does not restrict visibility.
+The nine CRM collections, `enquiries`, `audit_log`, and `agent_directory` are SQL-readable. Auth and internal tables are excluded. The operator-managed `enquiry_notification_recipients` collection is superuser-only through the records API and excluded from agent SQL. Every authenticated `users` account can read, create, and update all CRM records; `enquiries` has narrower rules, see [Public enquiry form](#public-enquiry-form). The `owner` relation assigns work; it does not restrict visibility.
 
-`agent_directory` exposes only account IDs and display names to authenticated agents through SQL and the records API. Its `id` matches the corresponding `agents` record. The migration backfills existing accounts, and server hooks synchronize account creation and name changes. Disabled accounts remain in the directory; account deletion is blocked. Agents cannot modify the directory, and anonymous callers cannot read it. Resolve owners, stamps, and audit actors with SQL joins; names need not be unique, so continue using IDs for assignment. The existing relations still target `agents`; directory access does not change native REST relation expansion or expose authentication fields.
+`agent_directory` exposes only account IDs and display names to authenticated agents through SQL and the records API. Its `id` matches the corresponding `users` record. The migration backfills existing accounts, and server hooks synchronize account creation and name changes. Disabled accounts remain in the directory; account deletion is blocked. Agents cannot modify the directory, and anonymous callers cannot read it. Resolve owners, stamps, and audit actors with SQL joins; names need not be unique, so continue using IDs for assignment. The existing relations still target `users`; directory access does not change native REST relation expansion or expose authentication fields.
 
 PocketBase validates fields and relations on writes. Server hooks in `pb_hooks/` add these rules to every validated save, from the records API and from the dashboard. A violation returns HTTP 400 with a message naming the field and the rule:
 
@@ -271,7 +317,7 @@ ONCE injects `BASE_URL`, `SMTP_ADDRESS`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PAS
 | Variable | Meaning |
 | --- | --- |
 | `DEALCONTEXT_SUPERUSER_EMAIL`, `DEALCONTEXT_SUPERUSER_PASSWORD` | The entrypoint runs `superuser upsert` on every start when both are set. One without the other is a startup error. |
-| `DEALCONTEXT_GOOGLE_CLIENT_ID`, `DEALCONTEXT_GOOGLE_CLIENT_SECRET` | Optional pair enabling Google OAuth on `agents`; both must be supplied together. |
+| `DEALCONTEXT_GOOGLE_CLIENT_ID`, `DEALCONTEXT_GOOGLE_CLIENT_SECRET` | Optional pair enabling Google OAuth on `users`; both must be supplied together. |
 | `DEALCONTEXT_GOOGLE_WORKSPACE_DOMAIN` | Optional lowercase DNS domain enabling verified Workspace JIT, e.g. `pocketcontext.com`. Absent: only existing accounts may log in. |
 | `DEALCONTEXT_TRUSTED_PROXY_HEADER` | Header that holds the client address, see below. Unset: the stored setting is left alone. |
 | `DEALCONTEXT_RATE_LIMITS` | `true` enables the rate limits, `false` disables them. The image sets `true`. |
@@ -368,6 +414,9 @@ python3 docker/smoke.py restore --image dealcontext:ci   # the restore drill
 For a change that users need in their installed skill, increment the recommendation in `pb_hooks/skill_version.pb.js` and `SKILL_REVISION` in `src/dealcontext_client/cli.py` together. The skill revision is independent of the server release: unrelated releases do not need a bump. Tests check that the published recommendation and bundled client agree.
 
 ```sh
+python3 tests/users_migration.py --binary ../pocketcontext/bin/pocketcontext
+python3 tests/identity_client.py
+python3 tests/identity_integration.py --binary ../pocketcontext/bin/pocketcontext
 python3 tests/integration.py --binary ../pocketcontext/bin/pocketcontext
 python3 tests/skill.py --binary ../pocketcontext/bin/pocketcontext
 python3 tests/deploy.py --binary ../pocketcontext/bin/pocketcontext

@@ -113,10 +113,10 @@ onRecordDeleteExecute((e) => {
             else:
                 raise RuntimeError('Server did not start')
             admin = request('POST', '/api/collections/_superusers/auth-with-password', {'identity': 'test-admin@example.com', 'password': 'TestAdminPassword123!'})['token']
-            agent = request('POST', '/api/collections/agents/records', {'email': 'agent@example.com', 'password': 'TestAgentPassword123!', 'passwordConfirm': 'TestAgentPassword123!', 'name': 'Test agent'}, admin)
-            token = request('POST', '/api/collections/agents/auth-with-password', {'identity': 'agent@example.com', 'password': 'TestAgentPassword123!'})['token']
-            agent2 = request('POST', '/api/collections/agents/records', {'email': 'agent2@example.com', 'password': 'TestAgentPassword456!', 'passwordConfirm': 'TestAgentPassword456!', 'name': 'Second agent'}, admin)
-            token2 = request('POST', '/api/collections/agents/auth-with-password', {'identity': 'agent2@example.com', 'password': 'TestAgentPassword456!'})['token']
+            agent = request('POST', '/api/collections/users/records', {'email': 'agent@example.com', 'password': 'TestAgentPassword123!', 'passwordConfirm': 'TestAgentPassword123!', 'name': 'Test agent'}, admin)
+            token = request('POST', '/api/collections/users/auth-with-password', {'identity': 'agent@example.com', 'password': 'TestAgentPassword123!'})['token']
+            agent2 = request('POST', '/api/collections/users/records', {'email': 'agent2@example.com', 'password': 'TestAgentPassword456!', 'passwordConfirm': 'TestAgentPassword456!', 'name': 'Second agent'}, admin)
+            token2 = request('POST', '/api/collections/users/auth-with-password', {'identity': 'agent2@example.com', 'password': 'TestAgentPassword456!'})['token']
             made = []
             def many(collection):
                 return f'/api/collections/{collection}/records'
@@ -206,8 +206,9 @@ onRecordDeleteExecute((e) => {
                 for field in ('email', 'password', 'tokenKey', 'verified'):
                     sql(f'SELECT {field} FROM agent_directory', expected=400)
                 sql('SELECT id, name FROM agents', expected=400)
-                request('GET', many('agents'), token=token, expected=403)
-                request('GET', one('agents', agent2), token=token, expected=404)
+                sql('SELECT id, name FROM users', expected=400)
+                request('GET', many('users'), token=token, expected=403)
+                request('GET', one('users', agent2), token=token, expected=404)
             with item('agent directory remains private to authenticated agents and forbids agent writes'):
                 anonymous = request('GET', many('agent_directory'))
                 assert anonymous['items'] == [] and anonymous['totalItems'] == 0, anonymous
@@ -219,32 +220,32 @@ onRecordDeleteExecute((e) => {
                     request('DELETE', one('agent_directory', agent2), token=auth, expected=403)
                 assert sql(f"SELECT name FROM agent_directory WHERE id = '{agent2['id']}'")['rows'] == [['Second agent']]
             with item('agent directory tracks renames and preserves disabled identities without requiring unique names'):
-                disposable = request('POST', many('agents'), {'email': 'disposable@example.com', 'password': 'TestDisposablePassword123!', 'passwordConfirm': 'TestDisposablePassword123!', 'name': 'Second agent'}, admin)
+                disposable = request('POST', many('users'), {'email': 'disposable@example.com', 'password': 'TestDisposablePassword123!', 'passwordConfirm': 'TestDisposablePassword123!', 'name': 'Second agent'}, admin)
                 assert sql(f"SELECT name FROM agent_directory WHERE id = '{disposable['id']}'")['rows'] == [['Second agent']]
-                request('PATCH', one('agents', disposable), {'name': 'Renamed agent'}, admin)
+                request('PATCH', one('users', disposable), {'name': 'Renamed agent'}, admin)
                 assert request('GET', one('agent_directory', disposable), token=token)['name'] == 'Renamed agent'
                 assert sql(f"SELECT name FROM agent_directory WHERE id = '{disposable['id']}'")['rows'] == [['Renamed agent']]
-                reject('PATCH', one('agents', disposable), {'name': ''}, ['name'], admin)
+                reject('PATCH', one('users', disposable), {'name': ''}, ['name'], admin)
                 assert sql(f"SELECT name FROM agent_directory WHERE id = '{disposable['id']}'")['rows'] == [['Renamed agent']]
-                request('DELETE', one('agents', disposable), token=admin, expected=403)
-                request('PATCH', one('agents', disposable), {'disabled': True}, admin)
+                request('DELETE', one('users', disposable), token=admin, expected=403)
+                request('PATCH', one('users', disposable), {'disabled': True}, admin)
                 assert request('GET', one('agent_directory', disposable), token=token)['name'] == 'Renamed agent'
             with item('failed directory synchronization rolls back account create and rename; deletion is blocked'):
                 fixture = {'id': 'dirfailcreate01', 'email': 'sync-failure@example.com', 'password': 'TestSyncFailurePassword123!', 'passwordConfirm': 'TestSyncFailurePassword123!', 'name': 'Sync failure fixture'}
-                request('POST', many('agents'), fixture, admin, expected=400)
-                request('GET', one('agents', fixture), token=admin, expected=404)
+                request('POST', many('users'), fixture, admin, expected=400)
+                request('GET', one('users', fixture), token=admin, expected=404)
                 request('GET', one('agent_directory', fixture), token=token, expected=404)
                 fixture['id'] = 'dirfaildelete01'
-                failing_agent = request('POST', many('agents'), fixture, admin)
-                request('PATCH', one('agents', failing_agent), {'name': 'Reject directory sync'}, admin, expected=400)
-                for collection, auth in (('agents', admin), ('agent_directory', token)):
+                failing_agent = request('POST', many('users'), fixture, admin)
+                request('PATCH', one('users', failing_agent), {'name': 'Reject directory sync'}, admin, expected=400)
+                for collection, auth in (('users', admin), ('agent_directory', token)):
                     assert request('GET', one(collection, failing_agent), token=auth)['name'] == fixture['name']
-                request('DELETE', one('agents', failing_agent), token=admin, expected=403)
-                for collection, auth in (('agents', admin), ('agent_directory', token)):
+                request('DELETE', one('users', failing_agent), token=admin, expected=403)
+                for collection, auth in (('users', admin), ('agent_directory', token)):
                     assert request('GET', one(collection, failing_agent), token=auth)['name'] == fixture['name']
 
             request('POST', '/api/collections/organizations/records', {'name': 'Forbidden', 'owner': agent['id']}, expected=400)
-            request('POST', '/api/collections/agents/records', {'name': 'Forbidden'}, token, expected=400)
+            request('POST', '/api/collections/users/records', {'name': 'Forbidden'}, token, expected=400)
             org = create('organizations', {'name': 'Acme', 'owner': agent['id']})
             person = create('people', {'name': 'Ada', 'email': 'ada@example.com', 'organization': org['id'], 'owner': agent['id']})
             with item('people LinkedIn URL is optional, validated, and SQL-readable'):
@@ -291,7 +292,7 @@ onRecordDeleteExecute((e) => {
             with item('agent directory resolves another account owner and attribution stamps'):
                 joined = request('POST', '/api/context/query', {'sql': f"SELECT o.name AS owner, c.name AS creator, u.name AS updater FROM deals d LEFT JOIN agent_directory o ON o.id = d.owner LEFT JOIN agent_directory c ON c.id = d.created_by LEFT JOIN agent_directory u ON u.id = d.updated_by WHERE d.id = '{deal['id']}'"}, token2)
                 assert joined['rows'] == [['Test agent', 'Test agent', 'Test agent']], joined
-                request('DELETE', one('agents', agent), token=admin, expected=403)
+                request('DELETE', one('users', agent), token=admin, expected=403)
                 assert request('GET', one('agent_directory', agent), token=token2)['name'] == 'Test agent'
             request('PATCH', f'/api/collections/deals/records/{deal["id"]}', {'stage': second['id']}, token)
             activity = create('activities', {'subject': 'Follow up', 'kind': 'call', 'deal': deal['id'], 'owner': agent['id'], 'due_at': '2030-01-01 09:00:00.000Z'})
@@ -637,19 +638,19 @@ onRecordDeleteExecute((e) => {
             batch_deal = {**new_deal, 'status': 'open'}
             with item('agent directory synchronization rolls back with failed account batches'):
                 fixture = {'email': 'batch-agent@example.com', 'password': 'TestBatchAgentPassword123!', 'passwordConfirm': 'TestBatchAgentPassword123!', 'name': 'Batch agent', 'id': 'batchagent00001'}
-                batch_fails([post('agents', fixture), post('missing_collection', {})], 1, 404, auth=admin)
-                request('GET', one('agents', fixture), token=admin, expected=404)
+                batch_fails([post('users', fixture), post('missing_collection', {})], 1, 404, auth=admin)
+                request('GET', one('users', fixture), token=admin, expected=404)
                 absent('agent_directory', fixture['id'])
                 assert sql(f"SELECT id FROM agent_directory WHERE id = '{fixture['id']}'")['rows'] == []
-                [batch_agent] = batch([post('agents', fixture)], auth=admin)
+                [batch_agent] = batch([post('users', fixture)], auth=admin)
                 assert sql(f"SELECT name FROM agent_directory WHERE id = '{batch_agent['id']}'")['rows'] == [['Batch agent']]
-                batch_fails([patch('agents', batch_agent, {'name': 'Rolled back name'}), post('missing_collection', {})], 1, 404, auth=admin)
-                assert request('GET', one('agents', batch_agent), token=admin)['name'] == 'Batch agent'
+                batch_fails([patch('users', batch_agent, {'name': 'Rolled back name'}), post('missing_collection', {})], 1, 404, auth=admin)
+                assert request('GET', one('users', batch_agent), token=admin)['name'] == 'Batch agent'
                 assert request('GET', one('agent_directory', batch_agent), token=token)['name'] == 'Batch agent'
-                batch_fails([{'method': 'DELETE', 'url': one('agents', batch_agent)}, post('missing_collection', {})], 0, 403, auth=admin)
-                assert request('GET', one('agents', batch_agent), token=admin)['name'] == 'Batch agent'
+                batch_fails([{'method': 'DELETE', 'url': one('users', batch_agent)}, post('missing_collection', {})], 0, 403, auth=admin)
+                assert request('GET', one('users', batch_agent), token=admin)['name'] == 'Batch agent'
                 assert sql(f"SELECT name FROM agent_directory WHERE id = '{batch_agent['id']}'")['rows'] == [['Batch agent']]
-                request('DELETE', one('agents', batch_agent), token=admin, expected=403)
+                request('DELETE', one('users', batch_agent), token=admin, expected=403)
                 assert request('GET', one('agent_directory', batch_agent), token=token)['name'] == 'Batch agent'
             with item('C1 a batch returns 200 and one result per request in order; rules, auto-fill and created_by apply to each request'):
                 before = counts()

@@ -66,7 +66,7 @@ def main():
         parser.error('--image and --minio-image are required for the container drill')
     root = Path(__file__).resolve().parents[1]
     prefix = root.name.upper()
-    auth = 'users' if root.name == 'raisecontext' else 'agents'
+    auth = 'users' if root.name == 'raisecontext' else 'users'
     spec = importlib.util.spec_from_file_location('smoke', root / 'docker/smoke.py')
     s = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(s)

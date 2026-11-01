@@ -233,7 +233,7 @@ def superuser_token(base, email, password):
 
 
 def provision_agent(base, token, email, password):
-    status, _, body = http('POST', base + '/api/collections/agents/records', token=token,
+    status, _, body = http('POST', base + '/api/collections/users/records', token=token,
                            body={'name': 'Image check agent', 'email': email, 'password': password, 'passwordConfirm': password})
     if status != 200 or not isinstance(body, dict) or not body.get('id'):
         raise Failure(f'creating the agent with the superuser token answered {status}: {str(body)[:500]}')
@@ -336,7 +336,7 @@ def smoke(image, tmp, run_id):
     check(settings['rateLimits']['enabled'] is True, "rate limits are enabled by the image's default DEALCONTEXT_RATE_LIMITS=true")
     check(env['SMTP_PASSWORD'] not in json.dumps(settings), 'the settings API does not return the SMTP password')
 
-    status, _, collection = http('GET', base + '/api/collections/agents', token=token)
+    status, _, collection = http('GET', base + '/api/collections/users', token=token)
     check(status == 200 and collection['oauth2']['enabled'], 'Google OAuth enabled on first install')
     check(collection['authToken']['duration'] == 604800 and collection['authRule'] == 'disabled = false', 'seven-day sessions and disabled-account authentication rule')
     check(collection['createRule'] == "@request.context = 'oauth2'", 'account creation limited to internally validated OAuth')
@@ -381,7 +381,7 @@ def smoke(image, tmp, run_id):
     status, _, state = http('GET', base + '/api/context/maintenance', token=token)
     check(status == 200 and state['state'] == 'read_only' and state['generation'] == frozen['generation'],
           'frozen container restart preserves the operator token and maintenance generation')
-    status, _, _ = http('POST', base + '/api/collections/agents/records', {}, token=token)
+    status, _, _ = http('POST', base + '/api/collections/users/records', {}, token=token)
     check(status == 503, 'frozen container rejects mutations')
     status, _, state = http('PUT', base + '/api/context/maintenance',
                             {'readOnly': False, 'expectedGeneration': frozen['generation']}, token=token)

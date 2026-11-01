@@ -19,7 +19,7 @@ export const app: {
   entities: Entity[];
 } = {
   name: "DealContext",
-  authCollection: "agents",
+  authCollection: "users",
   entities: [
     {
       table: "deals",

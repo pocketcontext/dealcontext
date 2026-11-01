@@ -6,7 +6,7 @@ function write(e, action) {
     e.app = app;
     try {
       const record = e.record, collection = record.collection().name, body = e.requestInfo().body;
-      const actor = e.auth && e.auth.collection().name === "agents" ? e.auth.id : "";
+      const actor = e.auth && e.auth.collection().name === "users" ? e.auth.id : "";
       if (!actor && !e.hasSuperuserAuth()) throw new ForbiddenError("Agent authentication required");
       let current = null;
       if (action !== "create") {

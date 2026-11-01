@@ -1,5 +1,5 @@
 function isUser(record) {
-  return record && record.collection().name === "agents";
+  return record && record.collection().name === "users";
 }
 
 function request(e) {
@@ -10,7 +10,7 @@ function request(e) {
   }
   if (isUser(e.auth)) {
     // Re-read so this guard also applies when an earlier handler supplied auth.
-    const current = e.app.findRecordById("agents", e.auth.id);
+    const current = e.app.findRecordById("users", e.auth.id);
     if (current.getBool("disabled") || current.tokenKey() !== e.auth.tokenKey()) {
       throw new ForbiddenError("This DealContext account is disabled or its session was revoked.");
     }
@@ -46,7 +46,7 @@ function realtime(e) {
   // delivery as a message may have been queued before the account was disabled.
   if (!auth) return;
   if (isUser(auth)) {
-    const current = e.app.findRecordById("agents", auth.id);
+    const current = e.app.findRecordById("users", auth.id);
     if (current.getBool("disabled") || current.tokenKey() !== auth.tokenKey()) return;
   }
   return e.next();

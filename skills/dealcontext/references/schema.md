@@ -18,9 +18,9 @@ Deal status is `open`, `won`, or `lost`. Activity kind is `call`, `meeting`, `em
 
 `value_minor` is an integer amount in the currency's minor unit (USD 12500 means $125.00; JPY 12500 means ¥12500). `currency` is a required three-letter uppercase code and must be an active ISO 4217 alphabetic code; the server rejects others, including `ZZZ`, `XXX`, and `XTS`. Conversion is an application responsibility. Do not add amounts across currencies without an explicit conversion policy. Values are limited to JavaScript's safe integer range.
 
-`agents` is the shared human and agent auth collection with a required display `name`. It supports password login and Google Workspace OAuth. Eligible verified Workspace identities can be created on first login when JIT is enabled; operators manage existing accounts. Auth records are excluded from SQL. Use your authenticated record ID when assigning work to yourself; query `agent_directory` for other account IDs and names.
+`users` is the shared human and agent auth collection with a required display `name`. It supports password login and Google Workspace OAuth. Eligible verified Workspace identities can be created on first login when JIT is enabled; operators manage existing accounts. Auth records are excluded from SQL. Use your authenticated record ID when assigning work to yourself; query `agent_directory` for other account IDs and names.
 
-`created_by` and `updated_by` are optional relations to `agents`. For agent requests the server sets both to the authenticated agent on create, and sets `updated_by` on update while `created_by` keeps its stored value. Values sent by an agent are ignored. Superuser requests leave both fields as they are, so records created by a superuser have them empty unless the superuser sets them. Accounts cannot be deleted. Operators disable them to revoke access while preserving these stamps and `audit_log.actor`.
+`created_by` and `updated_by` are optional relations to `users`. For agent requests the server sets both to the authenticated agent on create, and sets `updated_by` on update while `created_by` keeps its stored value. Values sent by an agent are ignored. Superuser requests leave both fields as they are, so records created by a superuser have them empty unless the superuser sets them. Accounts cannot be deleted. Operators disable them to revoke access while preserving these stamps and `audit_log.actor`.
 
 `people.linkedin_url` is an optional URL for the person's LinkedIn profile. It uses standard URL validation, with no domain restriction. Omitted or cleared values are stored as an empty string.
 
@@ -36,12 +36,12 @@ Messages record actual incoming or outgoing communication. Channel is `linkedin`
 
 | Field | Content |
 | --- | --- |
-| id | the same ID as the corresponding `agents` account |
+| id | the same ID as the corresponding `users` account |
 | name | the account's current display name; not unique |
 
 The migration backfills existing accounts, and server hooks synchronize account creation and name changes. Disabled accounts remain present; account deletion is blocked. The directory contains no email addresses, credentials, or other authentication fields. Account management remains an operator task.
 
-Join `agent_directory.id` to `owner`, `created_by`, `updated_by`, or `audit_log.actor`. Use `LEFT JOIN` to retain records with empty stamps or a historical missing audit actor. Names reflect current account names, not the names at the time of a write. Preserve IDs when reporting unresolved actors. Resolve duplicate names with the user before assigning work. Relations still target `agents`; the directory does not change REST `expand=owner` permissions.
+Join `agent_directory.id` to `owner`, `created_by`, `updated_by`, or `audit_log.actor`. Use `LEFT JOIN` to retain records with empty stamps or a historical missing audit actor. Names reflect current account names, not the names at the time of a write. Preserve IDs when reporting unresolved actors. Resolve duplicate names with the user before assigning work. Relations still target `users`; the directory does not change REST `expand=owner` permissions.
 
 ## Server rules
 
@@ -120,7 +120,7 @@ Discover actual columns using `/api/context/schema` (`dealcontext schema`). The 
 
 ## outreach_links
 
-Private mapping within the authenticated shared CRM, never a public lookup. `person` targets `people`; `owner` targets `agents` and assigns work, not visibility. `token` is a unique random 128-bit value encoded as exactly 32 lowercase hexadecimal characters. `destination` is an HTTPS article URL without credentials, whitespace, query or fragment, at most 2048 characters. `campaign` and `content_version` are required text, at most 128 characters each. Standard stamps and transactional API audit history apply.
+Private mapping within the authenticated shared CRM, never a public lookup. `person` targets `people`; `owner` targets `users` and assigns work, not visibility. `token` is a unique random 128-bit value encoded as exactly 32 lowercase hexadecimal characters. `destination` is an HTTPS article URL without credentials, whitespace, query or fragment, at most 2048 characters. `campaign` and `content_version` are required text, at most 128 characters each. Standard stamps and transactional API audit history apply.
 
 `token`, `person`, `destination` and `content_version` cannot change after creation, including through privileged validated saves. Create a new record for a new recipient, article destination or version. Campaign and owner may be corrected. Agents cannot delete records. The CLI derives `share_url = origin(destination) + '/r/' + token + '/'`; that value is not a database column. A token is an attribution label, not an authorization credential. Forwarding may produce multiple visitors, and visits never establish the recipient's identity.
 

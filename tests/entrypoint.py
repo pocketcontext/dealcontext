@@ -59,11 +59,11 @@ class RuntimeTests(unittest.TestCase):
     def test_actual_auth_and_multiple_file_fields_are_inventoried(self):
         self.database()
         with closing(sqlite3.connect(self.data / 'data.db')) as conn:
-            conn.execute('CREATE TABLE agents(id TEXT, avatar TEXT, documents TEXT)')
-            conn.execute('INSERT INTO _collections VALUES(?,?,?,?)', ('auth', 'agents', 'auth', json.dumps([
+            conn.execute('CREATE TABLE users(id TEXT, avatar TEXT, documents TEXT)')
+            conn.execute('INSERT INTO _collections VALUES(?,?,?,?)', ('auth', 'users', 'auth', json.dumps([
                 {'name': 'avatar', 'type': 'file', 'maxSelect': 1},
                 {'name': 'documents', 'type': 'file', 'maxSelect': 4}])))
-            conn.execute('INSERT INTO agents VALUES(?,?,?)', ('agent', 'portrait.png', '["a.pdf","b.pdf"]'))
+            conn.execute('INSERT INTO users VALUES(?,?,?)', ('agent', 'portrait.png', '["a.pdf","b.pdf"]'))
             conn.commit()
         self.assertEqual(set(runtime.refs(self.data)), {'col/doc/synthetic.txt', 'auth/agent/portrait.png',
                          'auth/agent/a.pdf', 'auth/agent/b.pdf'})

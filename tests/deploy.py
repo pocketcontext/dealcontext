@@ -202,14 +202,14 @@ def main():
 
             def agent(number, ip):
                 email, password = f'agent{number}@example.test', f'TestAgentPassword{number}!'
-                record = request('POST', '/api/collections/agents/records', {'email': email, 'password': password, 'passwordConfirm': password, 'name': f'Agent {number}'}, admin)
-                return record, email, password, login('agents', email, password, ip)['token']
+                record = request('POST', '/api/collections/users/records', {'email': email, 'password': password, 'passwordConfirm': password, 'name': f'Agent {number}'}, admin)
+                return record, email, password, login('users', email, password, ip)['token']
             first, email1, password1, token1 = agent(1, '198.51.100.2')
             second, email2, password2, token2 = agent(2, '198.51.100.2')
-            own, other = f'/api/collections/agents/records/{first["id"]}', f'/api/collections/agents/records/{second["id"]}'
+            own, other = f'/api/collections/users/records/{first["id"]}', f'/api/collections/users/records/{second["id"]}'
 
             with item('D3 agents collection options'):
-                collection = request('GET', '/api/collections/agents', token=admin)
+                collection = request('GET', '/api/collections/users', token=admin)
                 assert collection['authToken']['duration'] == 604800, collection['authToken']
                 assert collection['authAlert']['enabled'] is False, collection['authAlert']
                 claims = json.loads(base64.urlsafe_b64decode(token1.split('.')[1] + '=='))
@@ -227,25 +227,25 @@ def main():
                     request('PATCH', own, {**change, 'oldPassword': password1, field: value}, token1, expected=404, ip='198.51.100.3')
                     request('PATCH', own, {field: value}, token1, expected=404, ip='198.51.100.3')
                 request('DELETE', own, token=token1, expected=403, ip='198.51.100.3')
-                request('POST', '/api/collections/agents/records', {'email': 'self@example.test', 'password': new, 'passwordConfirm': new, 'name': 'Self'}, token1, expected=400, ip='198.51.100.3')
+                request('POST', '/api/collections/users/records', {'email': 'self@example.test', 'password': new, 'passwordConfirm': new, 'name': 'Self'}, token1, expected=400, ip='198.51.100.3')
                 stored = request('GET', own, token=admin)
                 assert (stored['email'], stored['name'], stored['verified'], stored['emailVisibility']) == (email1, 'Agent 1', False, False), stored
                 assert request('GET', own, token=token1, ip='198.51.100.3')['id'] == first['id']
-                login('agents', email1, password1, '198.51.100.3')
+                login('users', email1, password1, '198.51.100.3')
                 changed = request('PATCH', own, {**change, 'oldPassword': password1}, token1, ip='198.51.100.3')
                 assert changed['id'] == first['id'] and 'password' not in changed and 'tokenKey' not in changed, changed
             with item('D3 the old token and the old password stop working after the change'):
-                request('POST', '/api/collections/agents/auth-refresh', token=token1, expected=401, ip='198.51.100.3')
+                request('POST', '/api/collections/users/auth-refresh', token=token1, expected=401, ip='198.51.100.3')
                 request('POST', '/api/context/query', {'sql': 'SELECT 1'}, token1, expected=401, ip='198.51.100.3')
-                login('agents', email1, password1, '198.51.100.3', expected=400)
-                token1 = login('agents', email1, new, '198.51.100.3')['token']
+                login('users', email1, password1, '198.51.100.3', expected=400)
+                token1 = login('users', email1, new, '198.51.100.3')['token']
                 request('POST', '/api/context/query', {'sql': 'SELECT 1'}, token1, ip='198.51.100.3')
                 request('POST', '/api/context/query', {'sql': 'SELECT 1'}, token2, ip='198.51.100.3')
                 stored = request('GET', own, token=admin)
                 assert (stored['email'], stored['name'], stored['verified']) == (email1, 'Agent 1', False), stored
 
             def bad_login(ip, expected, header='X-Forwarded-For'):
-                request('POST', '/api/collections/agents/auth-with-password', {'identity': email2, 'password': 'WrongPassword123!'}, expected=expected, ip=ip, header=header)
+                request('POST', '/api/collections/users/auth-with-password', {'identity': email2, 'password': 'WrongPassword123!'}, expected=expected, ip=ip, header=header)
             fresh = (f'203.0.113.{number}' for number in range(100, 250))
             def exhaust(count, window, call):
                 """Use up a rule's allowance from a new client IP and see the next call rejected. PocketBase counts in
@@ -276,8 +276,8 @@ def main():
                 # The proxy appends the address it saw, so the rightmost entry counts and a forged leftmost entry does not.
                 bad_login('203.0.113.99, ' + limited, 429)
                 bad_login(limited + ', 203.0.113.98', 400)
-                login('agents', email2, password2, limited, expected=429)
-                login('agents', email2, password2, '203.0.113.97')
+                login('users', email2, password2, limited, expected=429)
+                login('users', email2, password2, '203.0.113.97')
                 for _ in range(350):
                     assert request('GET', '/up', ip=limited, raw=True) == 'OK'
                 bad_login(limited, 429)

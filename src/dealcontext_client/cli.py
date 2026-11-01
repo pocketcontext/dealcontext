@@ -3,7 +3,7 @@
 
 URL and email come from CLI options, environment variables, or saved login defaults:
   DEALCONTEXT_URL             server address, for example https://crm.example.com
-  DEALCONTEXT_AGENT_EMAIL     email of an account in the `agents` collection
+  DEALCONTEXT_AGENT_EMAIL     email of an account in the `users` collection
   DEALCONTEXT_AGENT_PASSWORD  optional password; Google sessions use login --google
 
 Exit codes: 0 success; 1 HTTP or transport error; 2 usage or configuration error;
@@ -36,7 +36,7 @@ ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789'
 TIMEOUT = 30
 USER_AGENT = 'DealContext/1.0'
 # Bump with the server recommendation when installed skill behavior or guidance changes.
-SKILL_REVISION = 6
+SKILL_REVISION = 7
 SKILL_CHECK_TTL = 300
 SKILL_VERSION_PATH = '/api/dealcontext/skill-version'
 hidden = []  # The password and tokens. say() masks them in everything it prints.
@@ -237,25 +237,41 @@ def send(cfg, method, path, body=None, token=None, timeout=TIMEOUT):
 def login(cfg):
     if not cfg.get('password'):
         raise Fail(2, 'Set DEALCONTEXT_AGENT_PASSWORD for password login, or run dealcontext login --google for browser sign-in.')
-    status, data = send(cfg, 'POST', '/api/collections/agents/auth-with-password', {'identity': cfg['email'], 'password': cfg['password']})
+    status, data = send(cfg, 'POST', '/api/collections/users/auth-with-password', {'identity': cfg['email'], 'password': cfg['password']})
     if status != 200 or not isinstance(data, dict) or 'token' not in data:
         raise Fail(1, f'login as {cfg["email"]} failed: HTTP {status}\n{dump(data)}\nCheck the three DEALCONTEXT_ variables with the user. User credentials only.')
     return auth_session(cfg, data, 'password')
 
 
 def auth_session(cfg, data, method):
-    """Accept only the expected agents identity; never retain provider metadata."""
+    """Accept only the expected users identity; never retain provider metadata."""
     token = data.get('token') if isinstance(data, dict) else None
     if isinstance(token, str):
         hide(token)
     record = data.get('record') if isinstance(data, dict) else None
-    if (not isinstance(token, str) or not token or not isinstance(record, dict) or record.get('collectionName') != 'agents'
+    if (not isinstance(token, str) or not token or not isinstance(record, dict) or record.get('collectionName') != 'users'
             or not record.get('id') or not isinstance(record.get('email'), str)
             or record['email'].casefold() != cfg['email'].casefold()):
         raise Fail(1, 'Authentication returned an unexpected identity; no session saved. Check DEALCONTEXT_AGENT_EMAIL.')
     session = {'url': cfg['url'], 'email': cfg['email'], 'token': token, 'method': method, 'refreshed_at': time.time()}
     save_session(cfg, session)
     return session
+
+
+def identity_login(cfg, *, interactive=False, no_browser=False, timeout=180):
+    """Exchange a central assertion; never downgrade to direct authentication."""
+    from pocketcontext_identity import IdentityError, assertion, login as central_login
+    try:
+        if interactive:
+            central_login(cfg['email'], no_browser=no_browser, timeout=timeout)
+        signed = assertion(cfg['email'], cfg['url'])
+    except IdentityError:
+        raise Fail(1, 'Identity sign-in or renewal failed; check account access and run dealcontext login. No fallback was attempted.') from None
+    hide(signed)
+    status, data = oauth_send(cfg, 'POST', '/api/context/auth-with-assertion', {'assertion': signed})
+    if status != 200:
+        raise Fail(1, f'Identity assertion exchange failed (HTTP {status}); check application access. No fallback was attempted.')
+    return auth_session(cfg, data, 'identity')
 
 
 def oauth_send(cfg, method, path, body=None, token=None):
@@ -281,7 +297,7 @@ def oauth_refresh_needed(session):
 def google_login(cfg, port=8765, timeout=180, open_browser=True):
     if not 1 <= port <= 65535 or not 1 <= timeout <= 600:
         raise Fail(2, 'OAuth port must be 1–65535 and timeout must be 1–600 seconds')
-    status, data = oauth_send(cfg, 'GET', '/api/collections/agents/auth-methods')
+    status, data = oauth_send(cfg, 'GET', '/api/collections/users/auth-methods')
     oauth = data.get('oauth2', {}) if isinstance(data, dict) else {}
     providers = oauth.get('providers', [])
     provider = next((p for p in providers if isinstance(p, dict) and p.get('name') == 'google'), None)
@@ -371,7 +387,7 @@ def google_login(cfg, port=8765, timeout=180, open_browser=True):
         raise Fail(1, 'Google sign-in timed out; run dealcontext login --google to retry.')
     if 'error' in outcome:
         raise Fail(1, outcome['error'])
-    status, data = oauth_send(cfg, 'POST', '/api/collections/agents/auth-with-oauth2', {
+    status, data = oauth_send(cfg, 'POST', '/api/collections/users/auth-with-oauth2', {
         'provider': 'google', 'code': outcome['code'], 'codeVerifier': verifier, 'redirectURL': redirect,
     })
     if status != 200:
@@ -383,7 +399,7 @@ def token_rejected(cfg, token):
     return send(cfg, 'POST', '/api/context/query', {'sql': 'SELECT 1'}, token)[0] == 401
 
 
-def call(cfg, method, path, body=None):
+def call(cfg, method, path, body=None, *, timeout=None):
     """Authenticated request. Returns (status, data).
 
     Only the SQL endpoints answer an expired or revoked token with 401. The records API treats it as no
@@ -393,21 +409,26 @@ def call(cfg, method, path, body=None):
     session = load_session(cfg)
     cached = session is not None
     if not cached:
-        session = login(cfg)
-    if session.get('method') == 'google' and (oauth_refresh_needed(session) or path == '/api/collections/agents/auth-refresh'):
+        session = login(cfg) if cfg.get('password') else identity_login(cfg)
+    if session.get('method') == 'identity' and (oauth_refresh_needed(session) or path == '/api/collections/users/auth-refresh'):
+        session = identity_login(cfg)
+    if session.get('method') == 'google' and (oauth_refresh_needed(session) or path == '/api/collections/users/auth-refresh'):
         # Renew at most every five minutes, or near expiry, to respect auth rate limits.
-        status, data = oauth_send(cfg, 'POST', '/api/collections/agents/auth-refresh', token=session['token'])
+        status, data = oauth_send(cfg, 'POST', '/api/collections/users/auth-refresh', token=session['token'])
         if status != 200:
             raise Fail(1, f'Google session could not be refreshed (HTTP {status}); run dealcontext login --google again.')
         session = auth_session(cfg, data, 'google')
-        if path == '/api/collections/agents/auth-refresh':
+        if path == '/api/collections/users/auth-refresh':
             return status, data
-    status, data = send(cfg, method, path, body, session['token'])
-    if cached and 400 <= status < 500 and status != 409 and (status == 401 or token_rejected(cfg, session['token'])):
+    options = {'timeout': timeout} if timeout is not None else {}
+    status, data = send(cfg, method, path, body, session['token'], **options)
+    if cached and 400 <= status < 500 and status not in (409, 429) and (status == 401 or token_rejected(cfg, session['token'])):
+        if session.get('method') == 'identity':
+            raise Fail(1, 'Identity session was rejected; check application access and run dealcontext login. No fallback was attempted.')
         if session.get('method') == 'google':
             raise Fail(1, 'Google session was rejected; run dealcontext login --google again.')
         session = login(cfg)
-        status, data = send(cfg, method, path, body, session['token'])
+        status, data = send(cfg, method, path, body, session['token'], **options)
     return status, data
 
 
@@ -632,7 +653,7 @@ def run(args):
     cfg = config(args=args)
     if args.command == 'login':
         session = (google_login(cfg, args.port, args.timeout, not args.no_browser)
-                   if args.google else login(cfg))
+                   if args.google else login(cfg) if args.password else identity_login(cfg, interactive=True, no_browser=args.no_browser, timeout=args.timeout))
         if load_session(cfg) != session:
             raise Fail(1, 'Login succeeded, but the session was not saved; defaults unchanged.')
         save_default(cfg)
@@ -668,7 +689,7 @@ def run(args):
         return check(cfg)
     if args.command == 'whoami':
         # auth-refresh returns the account behind the token. The new token it also returns is not used.
-        refreshed = must(cfg, 'POST', '/api/collections/agents/auth-refresh')
+        refreshed = must(cfg, 'POST', '/api/collections/users/auth-refresh')
         hide(refreshed.get('token'))
         record = refreshed['record']
         data = {'id': record['id'], 'name': record.get('name', ''), 'email': cfg['email'], 'url': cfg['url']}
@@ -747,8 +768,8 @@ def parse(argv):
         command = commands.add_parser(name, parents=[pretty], help=text, description=text)
         for argument, argument_help in arguments:
             command.add_argument(argument, help=argument_help)
-    oauth_login = commands.add_parser('login', help='sign in with Google or an account password and remember this connection')
-    mode = oauth_login.add_mutually_exclusive_group(required=True)
+    oauth_login = commands.add_parser('login', help='sign in through hosted identity; --google uses the direct loopback fallback')
+    mode = oauth_login.add_mutually_exclusive_group()
     mode.add_argument('--google', action='store_true')
     mode.add_argument('--password', action='store_true', help='use the account password environment variable')
     oauth_login.add_argument('--port', type=int, default=8765, help='loopback callback port; register the matching redirect URI')

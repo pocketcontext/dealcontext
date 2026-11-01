@@ -76,28 +76,28 @@ def main():
         admin = request('POST', '/api/collections/_superusers/auth-with-password', {
             'identity': 'admin@example.com', 'password': 'SyntheticAdminPassword123!',
         })['token']
-        collection = request('GET', '/api/collections/agents', token=admin)
+        collection = request('GET', '/api/collections/users', token=admin)
         assert collection['createRule'] == "@request.context = 'oauth2'"
-        request('PATCH', '/api/collections/agents', {'oauth2': {
+        request('PATCH', '/api/collections/users', {'oauth2': {
             'enabled': True,
             'providers': [{'name': 'google', 'clientId': 'synthetic-client', 'clientSecret': 'synthetic-secret',
                            'authURL': provider_url + '/authorize', 'tokenURL': provider_url + '/token',
                            'userInfoURL': provider_url + '/userinfo'}],
         }}, admin)
-        user = request('POST', '/api/collections/agents/records', {
+        user = request('POST', '/api/collections/users/records', {
             'email': 'member@example.com', 'name': 'Workspace member', 'verified': True,
             'password': 'SyntheticUserPassword123!', 'passwordConfirm': 'SyntheticUserPassword123!',
         }, admin)
 
         def exchange(email, *, verified=True, expected=200, wrong_verifier=False, subject='workspace-member'):
-            methods = request('GET', '/api/collections/agents/auth-methods')
+            methods = request('GET', '/api/collections/users/auth-methods')
             provider = next(p for p in methods['oauth2']['providers'] if p['name'] == 'google')
             assert provider['codeChallengeMethod'] == 'S256'
             code = secrets.token_urlsafe(24)
             codes[code] = {'challenge': provider['codeChallenge'], 'user': {
                 'sub': subject, 'email': email, 'email_verified': verified, 'name': 'Google display name',
             }}
-            return request('POST', '/api/collections/agents/auth-with-oauth2', {
+            return request('POST', '/api/collections/users/auth-with-oauth2', {
                 'provider': 'google', 'code': code, 'redirectURL': REDIRECT,
                 'codeVerifier': 'wrong-verifier' if wrong_verifier else provider['codeVerifier'],
             }, expected=expected)
@@ -111,7 +111,7 @@ def main():
         # A second login reuses the provider link and user identity.
         assert exchange('member@example.com')['record']['id'] == user['id']
         token = auth['token']
-        refreshed = request('POST', '/api/collections/agents/auth-refresh', token=token)
+        refreshed = request('POST', '/api/collections/users/auth-refresh', token=token)
         assert refreshed['record']['id'] == user['id'] and refreshed['token']
         for issued in (token, refreshed['token']):
             claims = json.loads(base64.urlsafe_b64decode(issued.split('.')[1] + '=='))
@@ -124,10 +124,10 @@ def main():
         assert 'Synthetic OAuth project' in json.dumps(result)
         history = request('GET', '/api/collections/audit_log/records', token=token)['items']
         assert any(row['record'] == project['id'] and row['actor'] == user['id'] for row in history)
-        assert request('GET', '/api/collections/agents/records', token=admin)['totalItems'] == 1
-        assert request('GET', '/api/collections/agents', token=admin)['createRule'] == "@request.context = 'oauth2'"
+        assert request('GET', '/api/collections/users/records', token=admin)['totalItems'] == 1
+        assert request('GET', '/api/collections/users', token=admin)['createRule'] == "@request.context = 'oauth2'"
         # Google login leaves the existing verified user's password login available.
-        password = request('POST', '/api/collections/agents/auth-with-password', {
+        password = request('POST', '/api/collections/users/auth-with-password', {
             'identity': 'member@example.com', 'password': 'SyntheticUserPassword123!',
         })
         assert password['record']['id'] == user['id']
@@ -142,11 +142,11 @@ def jit_checks(binary):
         })['token']
         provider = {'name': 'google', 'clientId': 'synthetic-client', 'clientSecret': 'synthetic-secret',
                     'authURL': url + '/authorize', 'tokenURL': url + '/token', 'userInfoURL': url + '/userinfo'}
-        request('PATCH', '/api/collections/agents', {'oauth2': {'enabled': True, 'providers': [provider]}}, admin)
+        request('PATCH', '/api/collections/users', {'oauth2': {'enabled': True, 'providers': [provider]}}, admin)
 
         def exchange(email='new@example.com', *, hd='example.com', verified=True, expected=200,
                      name='New Workspace member', create_data=None, subject=None, token=None):
-            metadata = request('GET', '/api/collections/agents/auth-methods')['oauth2']['providers'][0]
+            metadata = request('GET', '/api/collections/users/auth-methods')['oauth2']['providers'][0]
             code = secrets.token_urlsafe(24)
             identity = {'sub': subject or email, 'email': email, 'email_verified': verified, 'name': name}
             if hd is not None:
@@ -155,7 +155,7 @@ def jit_checks(binary):
             body = {'provider': 'google', 'code': code, 'redirectURL': REDIRECT, 'codeVerifier': metadata['codeVerifier']}
             if create_data is not None:
                 body['createData'] = create_data
-            return request('POST', '/api/collections/agents/auth-with-oauth2', body, token, expected)
+            return request('POST', '/api/collections/users/auth-with-oauth2', body, token, expected)
 
         # Neither a client-supplied email nor public registration can bypass Google membership.
         for options in [
@@ -167,21 +167,21 @@ def jit_checks(binary):
             exchange(**options, expected=(400, 403))
         signup = {'email': 'forged@example.com', 'name': 'Forged', 'password': 'SyntheticPassword123!',
                   'passwordConfirm': 'SyntheticPassword123!', 'verified': True, 'disabled': False}
-        request('POST', '/api/collections/agents/records', signup, expected=(400, 403))
-        request('POST', '/api/collections/agents/records?context=oauth2', signup, expected=(400, 403))
-        assert request('GET', '/api/collections/agents/records', token=admin)['totalItems'] == 0
+        request('POST', '/api/collections/users/records', signup, expected=(400, 403))
+        request('POST', '/api/collections/users/records?context=oauth2', signup, expected=(400, 403))
+        assert request('GET', '/api/collections/users/records', token=admin)['totalItems'] == 0
         auth = exchange(create_data={**signup, 'id': 'forged000000001', 'name': 'Forged name', 'disabled': True})
         user, token = auth['record'], auth['token']
         assert user['email'] == 'new@example.com' and user['name'] == 'New Workspace member'
         assert user['verified'] and not user['disabled'] and user['id'] != 'forged000000001'
-        path = '/api/collections/agents/records/' + user['id']
+        path = '/api/collections/users/records/' + user['id']
         assert request('GET', '/api/collections/agent_directory/records/' + user['id'], token=admin)['name'] == user['name']
         assert exchange()['record']['id'] == user['id']
         # Supplied passwords are discarded, and ordinary users still cannot provision accounts.
-        request('POST', '/api/collections/agents/auth-with-password', {
+        request('POST', '/api/collections/users/auth-with-password', {
             'identity': user['email'], 'password': signup['password'],
         }, expected=(400, 401, 403))
-        request('POST', '/api/collections/agents/records', signup, token, expected=(400, 403))
+        request('POST', '/api/collections/users/records', signup, token, expected=(400, 403))
         project = request('POST', '/api/collections/organizations/records', {'name': 'JIT project', 'owner': user['id']}, token)
         assert project['created_by'] == user['id']
         assert user['id'] in json.dumps(request('POST', '/api/context/query', {'sql': 'SELECT actor FROM audit_log'}, token))
@@ -190,35 +190,35 @@ def jit_checks(binary):
         request('PATCH', path, {'disabled': True}, admin)
         exchange(expected=(400, 403))
         exchange(create_data={'disabled': False, 'email': user['email']}, expected=(400, 403))
-        request('POST', '/api/collections/agents/auth-refresh', token=token, expected=(400, 401, 403))
+        request('POST', '/api/collections/users/auth-refresh', token=token, expected=(400, 401, 403))
         assert request('GET', path, token=admin)['disabled']
         request('PATCH', path, {'disabled': False}, admin)
         assert exchange()['record']['id'] == user['id']
         request('GET', '/api/context/schema', token=token, expected=(401, 403))
         # Existing accounts are adopted by normalized email, including disabled ones.
-        existing = request('POST', '/api/collections/agents/records', {
+        existing = request('POST', '/api/collections/users/records', {
             'email': 'EXISTING@EXAMPLE.COM', 'name': 'Existing identity', 'disabled': True,
             'password': 'SyntheticExistingPassword123!', 'passwordConfirm': 'SyntheticExistingPassword123!',
         }, admin)
         exchange('existing@example.com', expected=(400, 403))
-        existing_path = '/api/collections/agents/records/' + existing['id']
+        existing_path = '/api/collections/users/records/' + existing['id']
         request('PATCH', existing_path, {'disabled': False}, admin)
         adopted = exchange('existing@example.com')['record']
         assert adopted['id'] == existing['id'] and adopted['name'] == 'Existing identity'
         # A logged-in user cannot link someone else's identity to their own record.
         current = exchange()['token']
         exchange('other@example.com', token=current, expected=(400, 403))
-        assert request('GET', '/api/collections/agents/records', token=admin)['totalItems'] == 2
+        assert request('GET', '/api/collections/users/records', token=admin)['totalItems'] == 2
         request('POST', '/api/batch', {'requests': [
-            {'method': 'POST', 'url': '/api/collections/agents/records?context=oauth2', 'body': signup},
+            {'method': 'POST', 'url': '/api/collections/users/records?context=oauth2', 'body': signup},
         ]}, current, expected=(400, 403))
         # Case-variant ambiguity must fail closed instead of choosing an arbitrary identity.
-        request('POST', '/api/collections/agents/records', {
+        request('POST', '/api/collections/users/records', {
             'email': 'existing@example.com', 'name': 'Conflicting identity',
             'password': 'SyntheticOtherPassword123!', 'passwordConfirm': 'SyntheticOtherPassword123!',
         }, admin)
         exchange('existing@example.com', expected=(400, 403))
-        assert request('GET', '/api/collections/agents/records', token=admin)['totalItems'] == 3
+        assert request('GET', '/api/collections/users/records', token=admin)['totalItems'] == 3
     for domain in ('EXAMPLE.COM', 'https://example.com', 'example.com/path', ' example.com', 'example.com '):
         with patch.dict(os.environ, {'DEALCONTEXT_GOOGLE_WORKSPACE_DOMAIN': domain}):
             try:

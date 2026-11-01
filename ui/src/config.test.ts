@@ -20,6 +20,6 @@ it("every browser field and relation target belongs to the exported SQL schema",
         app.entities.some((t) => t.table === target),
         target,
       ).toBe(true);
-    expect(["users", "agents", "_superusers"]).not.toContain(e.table);
+    expect(["users", "users", "_superusers"]).not.toContain(e.table);
   }
 });

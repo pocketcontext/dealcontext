@@ -14,11 +14,15 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 
 @contextlib.contextmanager
-def server(binary):
+def server(binary, context_config=None):
     with tempfile.TemporaryDirectory(prefix='dealcontext-test-') as tmp:
         hooks=Path(tmp)/'pb_hooks'
         shutil.copytree(ROOT/'pb_hooks',hooks)
         common = [str(Path(binary).resolve()), '--dir', str(Path(tmp)/'pb_data'), '--migrationsDir', str(ROOT/'pb_migrations'), '--hooksDir', str(hooks)]
+        if context_config is not None:
+            config_path = Path(tmp)/'pocketcontext.json'
+            config_path.write_text(json.dumps(context_config))
+            common += ['--contextConfig',str(config_path)]
         result = subprocess.run(common+['superuser','upsert','admin@example.com','SyntheticAdminPassword123!'],cwd=ROOT,capture_output=True,text=True)
         assert result.returncode == 0, result.stdout+result.stderr
         with socket.socket() as sock:

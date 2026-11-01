@@ -69,10 +69,10 @@ def main():
             raise AssertionError('server startup timeout')
         admin = request('POST', '/api/collections/_superusers/auth-with-password',
                         {'identity': 'admin@example.com', 'password': 'SyntheticAdminPassword123!'})['token']
-        agent = request('POST', '/api/collections/agents/records', {'email': 'importer@example.com',
+        agent = request('POST', '/api/collections/users/records', {'email': 'importer@example.com',
             'name': 'Synthetic importer', 'password': 'SyntheticPassword123!',
             'passwordConfirm': 'SyntheticPassword123!'}, admin)
-        token = request('POST', '/api/collections/agents/auth-with-password',
+        token = request('POST', '/api/collections/users/auth-with-password',
                         {'identity': agent['email'], 'password': 'SyntheticPassword123!'})['token']
         people = []
         for name, email in [('Unique', 'unique@example.com'), ('Ambiguous A', 'duplicate@example.com'),

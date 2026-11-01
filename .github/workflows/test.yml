@@ -48,6 +48,11 @@ jobs:
         working-directory: pocketcontext
         # The flags of pocketcontext's Makefile.
         run: CGO_ENABLED=1 go build -tags sqlite_math_functions -o bin/pocketcontext ./cmd/pocketcontext
+      - name: Test legacy account conversion and hosted identity
+        run: |
+          python3 dealcontext/tests/users_migration.py --binary pocketcontext/bin/pocketcontext
+          python3 dealcontext/tests/identity_client.py
+          python3 dealcontext/tests/identity_integration.py --binary pocketcontext/bin/pocketcontext
       - name: Test CRM
         run: python3 dealcontext/tests/integration.py --binary pocketcontext/bin/pocketcontext
       - name: Test manual demo import boundary and lifecycle

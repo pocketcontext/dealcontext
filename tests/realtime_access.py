@@ -18,12 +18,12 @@ def main():
             'identity': 'admin@example.com', 'password': 'SyntheticAdminPassword123!',
         })['token']
         credentials = {'identity': 'realtime@example.test', 'password': 'SyntheticRealtimePassword123!'}
-        user = request('POST', '/api/collections/agents/records', {
+        user = request('POST', '/api/collections/users/records', {
             'email': credentials['identity'], 'name': 'Realtime',
             'password': credentials['password'], 'passwordConfirm': credentials['password'],
         }, admin)
-        user_path = '/api/collections/agents/records/' + user['id']
-        token = request('POST', '/api/collections/agents/auth-with-password', credentials)['token']
+        user_path = '/api/collections/users/records/' + user['id']
+        token = request('POST', '/api/collections/users/auth-with-password', credentials)['token']
         messages = queue.Queue()
 
         def listen():
@@ -63,7 +63,7 @@ def main():
             except queue.Empty:
                 pass
             request('POST', '/api/realtime', subscriptions, token, expected=401)
-        fresh = request('POST', '/api/collections/agents/auth-with-password', credentials)['token']
+        fresh = request('POST', '/api/collections/users/auth-with-password', credentials)['token']
         request('POST', '/api/realtime', subscriptions, fresh, expected=204)
         project = request('PATCH', project_path, {'name': 'Fresh login'}, admin)
         event, data = messages.get(timeout=5)

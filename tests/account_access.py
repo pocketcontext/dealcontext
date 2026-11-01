@@ -14,12 +14,12 @@ def main():
             'identity': 'admin@example.com', 'password': 'SyntheticAdminPassword123!',
         })['token']
         credentials = {'identity': 'member@example.test', 'password': 'SyntheticMemberPassword123!'}
-        user = request('POST', '/api/collections/agents/records', {
+        user = request('POST', '/api/collections/users/records', {
             'email': credentials['identity'], 'name': 'Member', 'password': credentials['password'],
             'passwordConfirm': credentials['password'],
         }, admin)
-        path = '/api/collections/agents/records/' + user['id']
-        token = request('POST', '/api/collections/agents/auth-with-password', credentials)['token']
+        path = '/api/collections/users/records/' + user['id']
+        token = request('POST', '/api/collections/users/auth-with-password', credentials)['token']
         project = request('POST', '/api/collections/organizations/records', {'name': 'Access test', 'owner': user['id']}, token)
         project_path = '/api/collections/organizations/records/' + project['id']
         # Users cannot manage their own access state, even if submitting the current value.
@@ -40,7 +40,7 @@ def main():
                 ('POST', '/api/collections/organizations/records', {'name': 'Forbidden'}),
                 ('PATCH', project_path, {'name': 'Forbidden'}),
                 ('GET', path, None),
-                ('POST', '/api/collections/agents/auth-refresh', None),
+                ('POST', '/api/collections/users/auth-refresh', None),
                 ('POST', '/api/files/token', None),
                 ('POST', '/api/batch', {'requests': [
                     {'method': 'POST', 'url': '/api/collections/organizations/records', 'body': {'name': 'Forbidden'}},
@@ -49,7 +49,7 @@ def main():
                 request(method, endpoint, body, old_token, expected=(400, 401, 403, 404))
 
         rejected(token)
-        request('POST', '/api/collections/agents/auth-with-password', credentials, expected=(400, 401, 403))
+        request('POST', '/api/collections/users/auth-with-password', credentials, expected=(400, 401, 403))
         disabled = request('GET', path, token=admin)
         assert disabled['disabled'] and disabled['id'] == user['id']
         assert request('GET', project_path, token=admin)['name'] == 'Access test'
@@ -57,7 +57,7 @@ def main():
         # Re-enabling does not resurrect previously issued tokens.
         request('PATCH', path, {'disabled': False}, admin)
         rejected(token)
-        fresh = request('POST', '/api/collections/agents/auth-with-password', credentials)['token']
+        fresh = request('POST', '/api/collections/users/auth-with-password', credentials)['token']
         request('GET', '/api/context/schema', token=fresh)
         assert request('GET', project_path, token=fresh)['created_by'] == user['id']
         assert request('GET', '/api/collections/organizations/records', token=admin)['totalItems'] == 1

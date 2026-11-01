@@ -16,7 +16,7 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = 'dealcontext'
-AUTH = 'agents'
+AUTH = 'users'
 TABLE = 'organizations'
 PAYLOAD = {'name': 'Synthetic freeze organization'}
 

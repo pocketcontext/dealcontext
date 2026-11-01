@@ -3,4 +3,4 @@ onBootstrap((e) => {
   e.next();
 });
 
-onRecordAuthWithOAuth2Request((e) => require(`${__hooks}/google_jit.js`).authenticate(e), "agents");
+onRecordAuthWithOAuth2Request((e) => require(`${__hooks}/google_jit.js`).authenticate(e), "users");

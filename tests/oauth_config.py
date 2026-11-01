@@ -20,14 +20,14 @@ def main():
         admin = request('POST', '/api/collections/_superusers/auth-with-password', {
             'identity': 'admin@example.com', 'password': 'SyntheticAdminPassword123!',
         })['token']
-        collection = request('GET', '/api/collections/agents', token=admin)
+        collection = request('GET', '/api/collections/users', token=admin)
         assert collection['oauth2']['enabled'] and collection['passwordAuth']['enabled']
         provider, = collection['oauth2']['providers']
         assert provider['name'] == 'google' and provider['clientId'] == client and provider.get('clientSecret') is None
         assert collection['authToken']['duration'] == 604800
         assert collection['authRule'] == 'disabled = false'
         assert collection['createRule'] == "@request.context = 'oauth2'"
-        methods = request('GET', '/api/collections/agents/auth-methods')
+        methods = request('GET', '/api/collections/users/auth-methods')
         assert methods['oauth2']['enabled']
     for values in [(client, ''), ('', secret), (client, secret + ' '), (client + ' ', secret)]:
         with patch.dict(os.environ, dict(zip(['DEALCONTEXT_GOOGLE_CLIENT_ID', 'DEALCONTEXT_GOOGLE_CLIENT_SECRET'], values))):

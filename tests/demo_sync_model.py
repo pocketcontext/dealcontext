@@ -29,8 +29,8 @@ def main():
     admin=req('POST','/api/collections/_superusers/auth-with-password',{'identity':'admin@example.com','password':'SyntheticAdminPassword123!'})['token']
     sessions=[]
     for who in ['one','two']:
-     post('agents',{'email':who+'@example.com','name':who,'password':'SyntheticPassword123!','passwordConfirm':'SyntheticPassword123!'},admin)
-     sessions.append(req('POST','/api/collections/agents/auth-with-password',{'identity':who+'@example.com','password':'SyntheticPassword123!'}))
+     post('users',{'email':who+'@example.com','name':who,'password':'SyntheticPassword123!','passwordConfirm':'SyntheticPassword123!'},admin)
+     sessions.append(req('POST','/api/collections/users/auth-with-password',{'identity':who+'@example.com','password':'SyntheticPassword123!'}))
     a,b=[s['token'] for s in sessions]
     source='vaultcontext-demo';runbody={'source':source,'snapshot_id':'snapshot-one','generated_at':100,'status':'running','counts':{},'expected_run_count':0}
     post('demo_sync_runs',runbody,None,400)

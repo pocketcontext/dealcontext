@@ -73,7 +73,7 @@ def crm_server(binary, tmp):
         else:
             raise RuntimeError('Server did not start')
         admin = request('POST', '/api/collections/_superusers/auth-with-password', {'identity': 'test-admin@example.com', 'password': 'TestAdminPassword123!'})['token']
-        agent = request('POST', '/api/collections/agents/records', {'email': EMAIL, 'password': PASSWORD, 'passwordConfirm': PASSWORD, 'name': 'Skill agent'}, admin)
+        agent = request('POST', '/api/collections/users/records', {'email': EMAIL, 'password': PASSWORD, 'passwordConfirm': PASSWORD, 'name': 'Skill agent'}, admin)
         yield base, agent
     except Exception:
         log.flush()
@@ -107,7 +107,7 @@ class Conflict(BaseHTTPRequestHandler):
         conflict = {'status': 409, 'message': 'The record was changed by another request. Read it again and retry.', 'data': {}}
         if self.path.endswith('/auth-with-password'):
             Conflict.logins += 1
-            self.reply(200, {'token': 'stub-token-0123456789', 'record': {'id': 'stubagent000001', 'name': 'Stub', 'collectionName': 'agents', 'email': EMAIL}})
+            self.reply(200, {'token': 'stub-token-0123456789', 'record': {'id': 'stubagent000001', 'name': 'Stub', 'collectionName': 'users', 'email': EMAIL}})
         elif self.path == '/api/batch':
             self.reply(400, {'status': 400, 'message': 'Batch transaction failed.', 'data': {'requests': {'0': {'code': 'batch_request_failed', 'response': conflict}}}})
         elif self.path == '/api/context/query':
@@ -139,7 +139,7 @@ class ClientIdentityGate(Conflict):
         if agent != 'DealContext/1.0':
             self.reply(403, {'message': 'Client identification required'})
         elif self.path.endswith('/auth-with-password'):
-            self.reply(200, {'token': 'identity-test-token-0123456789', 'record': {'id': 'identityagent01', 'collectionName': 'agents', 'email': EMAIL}})
+            self.reply(200, {'token': 'identity-test-token-0123456789', 'record': {'id': 'identityagent01', 'collectionName': 'users', 'email': EMAIL}})
         elif self.path == '/api/context/query' and self.headers.get('Authorization') == 'identity-test-token-0123456789':
             self.reply(200, {'columns': ['1'], 'rows': [[1]], 'truncated': False})
         else:
@@ -170,7 +170,7 @@ class SkillVersion(Conflict):
     def do_POST(self):
         body = json.loads(self.rfile.read(int(self.headers.get('Content-Length') or 0)) or b'{}')
         if self.path.endswith('/auth-with-password') or self.path.endswith('/auth-refresh'):
-            self.reply(200, {'token': self.token, 'record': {'id': 'stubagent000001', 'name': 'Stub', 'collectionName': 'agents', 'email': body.get('identity', EMAIL)}})
+            self.reply(200, {'token': self.token, 'record': {'id': 'stubagent000001', 'name': 'Stub', 'collectionName': 'users', 'email': body.get('identity', EMAIL)}})
         elif self.path == '/api/context/query':
             self.reply(200, {'columns': ['1'], 'rows': [[1]], 'truncated': False})
         elif self.path == '/api/batch':
@@ -457,7 +457,7 @@ def main():
             dc('check')
         with item('schema prints the live tables'):
             names = {table['name'] for table in out('schema')['tables']}
-            assert {'deals', 'activities', 'notes', 'audit_log'} <= names and 'agents' not in names, names
+            assert {'deals', 'activities', 'notes', 'audit_log'} <= names and 'users' not in names, names
 
         with item('create, update, get'):
             pipeline = out('create', 'pipelines', json.dumps({'name': 'Sales', 'active': True}))
@@ -523,7 +523,7 @@ def main():
             assert 'HTTP 404' in err, err
             stdout, err = dc('create', 'notes', json.dumps({'body': 'Orphan', 'owner': me['id']}), expect=1)
             assert stdout == '' and 'HTTP 400' in err and 'At least one of deal, person, organization' in err, err
-            _, err = dc('sql', 'SELECT id FROM agents', expect=1)
+            _, err = dc('sql', 'SELECT id FROM users', expect=1)
             assert 'HTTP 400' in err, err
             _, err = dc('whoami', expect=1, DEALCONTEXT_URL='http://127.0.0.1:1', XDG_CACHE_HOME=str(tmp / 'cache-unreachable'), XDG_STATE_HOME=str(tmp / 'state-unreachable'))
             assert 'cannot reach' in err, err
@@ -605,7 +605,7 @@ def main():
                 result = out('sql', 'SELECT 1', DEALCONTEXT_URL=stub_url, XDG_CACHE_HOME=str(tmp / 'identity-cache'), XDG_STATE_HOME=str(tmp / 'identity-state'))
                 assert result['rows'] == [[1]], result
                 assert ClientIdentityGate.requests == [
-                    ('/api/collections/agents/auth-with-password', 'DealContext/1.0', None),
+                    ('/api/collections/users/auth-with-password', 'DealContext/1.0', None),
                     ('/api/dealcontext/skill-version', 'DealContext/1.0', 'identity-test-token-0123456789'),
                     ('/api/context/query', 'DealContext/1.0', 'identity-test-token-0123456789'),
                 ], ClientIdentityGate.requests

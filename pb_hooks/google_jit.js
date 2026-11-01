@@ -32,7 +32,7 @@ function authenticate(e) {
   // PocketBase's initial email lookup is case-sensitive. Resolve case variants
   // before provisioning so an existing identity (including a disabled one)
   // cannot be bypassed by Google's email casing.
-  const matches = e.app.findRecordsByFilter("agents", "email:lower = {:email}", "", 2, 0,
+  const matches = e.app.findRecordsByFilter("users", "email:lower = {:email}", "", 2, 0,
     {email: email.toLowerCase()});
   if (matches.length > 1 || (e.record && matches.length && matches[0].id !== e.record.id)) {
     throw new ForbiddenError("Google identity matches conflicting DealContext accounts; contact an operator.");

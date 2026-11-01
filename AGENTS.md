@@ -2,6 +2,8 @@
 
 DealContext is a shared sales CRM operated through a coding agent.
 
+Humans and agents authenticate through default `users`. Bare CLI login uses hosted IdentityContext; direct Google/password login remains explicit. The one-time legacy account conversion preserves IDs and relations and requires a verified complete backup before deployment.
+
 CRM operation: use the skill in `skills/dealcontext/`. Read `skills/dealcontext/SKILL.md` first; it holds the operating rules, the configuration (`DEALCONTEXT_URL`, `DEALCONTEXT_AGENT_EMAIL`, optional `DEALCONTEXT_AGENT_PASSWORD` or Google login), the client `skills/dealcontext/dealcontext`, and pointers to the schema, workflow, and example references. Use agent credentials only. Superuser access is for provisioning and maintenance by the operator, not for CRM work. Keep passwords and tokens out of source files, logs, and commits.
 
 Implementation changes: run the checks against a locally built PocketContext binary (`make -C ../pocketcontext build`). Each uses an isolated temporary database.

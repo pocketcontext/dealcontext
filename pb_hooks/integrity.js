@@ -154,7 +154,7 @@ function audited(e) {
 }
 
 function agentId(e) {
-  return e.auth && e.auth.collection().name === "agents" ? e.auth.id : "";
+  return e.auth && e.auth.collection().name === "users" ? e.auth.id : "";
 }
 
 function snapshot(record, skip, action) {
