@@ -1,6 +1,6 @@
 ---
 name: dealcontext
-description: Operate DealContext CRM through its HTTP API with the bundled dealcontext client. Use for deals, pipelines, stages, contacts, organizations, follow-up activities, messages, notes, web enquiries, outreach links, manual demo-contact synchronization, and audit history. Create or update records, record incoming or outgoing messages, schedule follow-ups, close deals, triage enquiries, and review the pipeline. Uses DEALCONTEXT_URL and DEALCONTEXT_AGENT_EMAIL, with Google login or an account password.
+description: Operate DealContext CRM through its HTTP API with the bundled dealcontext client. Use for deals, pipelines, stages, contacts, organizations, follow-up activities, messages, notes, web enquiries, outreach links, manual demo-contact synchronization, and audit history. Create or update records, record incoming or outgoing messages, schedule follow-ups, close deals, triage enquiries, and review the pipeline. Accepts CLI connection options or saved defaults, with optional environment overrides and Google or password login.
 ---
 
 # DealContext
@@ -110,11 +110,11 @@ Run `dealcontext check` at the start of a session. It refreshes the revision che
 
 ## Optional request tracing
 
-When the user requests performance tracing, use the separately installed ObserveContext skill. Sign in to DealContext normally and to ObserveContext with your ordinary account (`OBSERVECONTEXT_URL` and `OBSERVECONTEXT_USER_EMAIL`). Run its client by absolute path; do not search for credentials or use a superuser.
+When the user requests performance tracing, use the separately installed ObserveContext skill. Sign in to DealContext normally and to ObserveContext with your ordinary account using `login --google --url URL --email EMAIL` or saved defaults. Use your configured CRM origin for capture. Run its client by absolute path; do not search for credentials or use a superuser.
 
 ```sh
 /path/to/observecontext/observecontext capture \
-  --url "$DEALCONTEXT_URL" --service dealcontext.client --upload -- \
+  --url https://crm.pocketcontext.com --service dealcontext.client --upload -- \
   /path/to/dealcontext/dealcontext sql 'SELECT id FROM deals LIMIT 5'
 ```
 
